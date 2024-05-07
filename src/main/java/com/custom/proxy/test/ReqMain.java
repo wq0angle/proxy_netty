@@ -1,5 +1,7 @@
 package com.custom.proxy.test;
 
+import lombok.extern.slf4j.Slf4j;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -7,8 +9,8 @@ import java.net.HttpURLConnection;
 import java.net.InetSocketAddress;
 import java.net.Proxy;
 import java.net.URL;
-import java.util.Map;
 
+@Slf4j
 public class ReqMain {
     public static void main(String[] args) {
         String targetUrl = "https://fanyi.baidu.com/";
@@ -33,11 +35,11 @@ public class ReqMain {
             reader.close();
 
             // 打印响应内容
-            System.out.println("Response: " + response.toString());
+            log.info("Response: {}", response);
 
             connection.disconnect();
         } catch (IOException e) {
-            e.printStackTrace();
+            log.error("Error: ", e);
         }
     }
 }

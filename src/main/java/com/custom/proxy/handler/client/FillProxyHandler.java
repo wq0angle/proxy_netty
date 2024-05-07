@@ -8,6 +8,8 @@ import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.handler.codec.http.*;
 import lombok.extern.slf4j.Slf4j;
 
+import java.io.IOException;
+
 @Slf4j
 public class FillProxyHandler extends SimpleChannelInboundHandler<FullHttpRequest> {
 
@@ -20,7 +22,7 @@ public class FillProxyHandler extends SimpleChannelInboundHandler<FullHttpReques
     }
 
     @Override
-    protected void channelRead0(ChannelHandlerContext ctx, FullHttpRequest request) throws Exception {
+    protected void channelRead0(ChannelHandlerContext ctx, FullHttpRequest request) {
         if (request.method() == HttpMethod.CONNECT) {
             log.info("Received CONNECT request: {}", request.uri());
             // 构建新的请求转发到服务端
@@ -76,7 +78,11 @@ public class FillProxyHandler extends SimpleChannelInboundHandler<FullHttpReques
 
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
-        cause.printStackTrace();
+        if (cause instanceof IOException && cause.getMessage().contains("Connection reset")) {
+            log.info("Connection was reset by the peer");
+        } else {
+            log.error("Error occurred in FillProxyHandler", cause);
+        }
         ctx.close();
     }
 
