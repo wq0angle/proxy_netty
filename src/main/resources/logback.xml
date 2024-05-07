@@ -1,0 +1,34 @@
+<configuration>
+    <property name="infoLogDir" value="${user.dir}/log/info"/>
+    <property name="errorLogDir" value="${user.dir}/log/error"/>
+
+    <appender name="INFO_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+<!--        <file>${infoLogDir}/info.log</file>-->
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>${infoLogDir}/info.%d{yyyy-MM-dd_HH}.log</fileNamePattern>
+            <maxHistory>240</maxHistory>
+        </rollingPolicy>
+        <encoder>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <appender name="ERROR_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+<!--        <file>${errorLogDir}/error.log</file>-->
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>${errorLogDir}/error.%d{yyyy-MM-dd_HH}.log</fileNamePattern>
+            <maxHistory>24</maxHistory>
+        </rollingPolicy>
+        <encoder>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <root level="info">
+        <appender-ref ref="INFO_FILE"/>
+    </root>
+
+    <logger name="errorLogger" level="error">
+        <appender-ref ref="ERROR_FILE"/>
+    </logger>
+</configuration>
