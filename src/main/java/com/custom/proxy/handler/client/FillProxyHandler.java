@@ -6,8 +6,13 @@ import io.netty.channel.*;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.handler.codec.http.*;
+import io.netty.handler.logging.LogLevel;
+import io.netty.handler.logging.LoggingHandler;
+import io.netty.handler.ssl.SslContext;
+import io.netty.handler.ssl.SslContextBuilder;
 import lombok.extern.slf4j.Slf4j;
 
+import javax.net.ssl.SSLException;
 import java.io.IOException;
 
 @Slf4j
@@ -15,10 +20,12 @@ public class FillProxyHandler extends SimpleChannelInboundHandler<FullHttpReques
 
     private final String remoteHost;
     private final int remotePort;
+    private final SslContext sslContext;
 
-    public FillProxyHandler(String remoteHost, int remotePort) {
+    public FillProxyHandler(String remoteHost, int remotePort) throws SSLException {
         this.remoteHost = remoteHost;
         this.remotePort = remotePort;
+        this.sslContext = SslContextBuilder.forClient().build();
     }
 
     @Override
@@ -27,7 +34,7 @@ public class FillProxyHandler extends SimpleChannelInboundHandler<FullHttpReques
             log.info("Received CONNECT request: {}", request.uri());
             // 构建新的请求转发到服务端
             FullHttpRequest forwardRequest = new DefaultFullHttpRequest(
-                    request.protocolVersion(), HttpMethod.POST, request.uri());
+                    request.protocolVersion(), HttpMethod.POST, "/");
             forwardRequest.headers().set(request.headers());
 
             String host = request.uri().substring(0, request.uri().indexOf(":"));
@@ -42,7 +49,9 @@ public class FillProxyHandler extends SimpleChannelInboundHandler<FullHttpReques
                     .handler(new ChannelInitializer<SocketChannel>() {
                         @Override
                         protected void initChannel(SocketChannel ch) {
-                            // 仅添加用于转发的handler，不处理SSL，因为它是由客户端和目标服务器协商的
+                            // 仅添加用于转发的handler
+                            ch.pipeline().addLast(sslContext.newHandler(ch.alloc(), remoteHost, remotePort)); // 添加 SSL 处理器
+//                            ch.pipeline().addLast(new LoggingHandler(LogLevel.INFO)); // 添加日志处理器，输出 SSL 握手过程中的详细信息
                             ch.pipeline().addLast(new RelayHandler(ctx.channel()));
                         }
                     });

@@ -8,7 +8,7 @@ import org.springframework.context.annotation.Configuration;
 public class ProxyServerConfig {
     @Bean
     public ProxyServerHandler proxyServerHandler() throws Exception {
-        int port = 8888; // 设置您希望的代理服务器端口号
+        int port = 5088; // 设置您希望的代理服务器端口号
         ProxyServerHandler.start(port);
         return new ProxyServerHandler();
     }

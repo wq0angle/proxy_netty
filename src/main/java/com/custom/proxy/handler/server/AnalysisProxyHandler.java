@@ -5,10 +5,20 @@ import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.*;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.handler.codec.http.*;
+import io.netty.handler.ssl.SslContext;
+import io.netty.handler.ssl.SslContextBuilder;
 import lombok.extern.slf4j.Slf4j;
+
+import javax.net.ssl.SSLException;
 
 @Slf4j
 public class AnalysisProxyHandler extends SimpleChannelInboundHandler<FullHttpRequest> {
+
+    private final SslContext sslContext;
+
+    public AnalysisProxyHandler() throws SSLException {
+        this.sslContext = SslContextBuilder.forClient().build();
+    }
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, FullHttpRequest request) {
 
@@ -19,6 +29,7 @@ public class AnalysisProxyHandler extends SimpleChannelInboundHandler<FullHttpRe
             host = request.headers().get("X-Target-Host");
             port = request.headers().getInt("X-Target-Port");
             request.setMethod(HttpMethod.CONNECT);
+            request.setUri((port == 443 ? "https" : "http") + "://" + host + ":" + port);
         }
         else {
             String[] hostPort = request.uri().split(":");
@@ -36,7 +47,8 @@ public class AnalysisProxyHandler extends SimpleChannelInboundHandler<FullHttpRe
                 .handler(new ChannelInitializer<SocketChannel>() {
                     @Override
                     protected void initChannel(SocketChannel ch) {
-                        // 仅添加用于转发的handler，不处理SSL，因为它是由客户端和目标服务器协商的
+                        // 仅添加用于转发的handler
+//                        ch.pipeline().addLast(sslContext.newHandler(ch.alloc(), host, port)); // 添加 SSL 处理器
                         ch.pipeline().addLast(new RelayHandler(ctx.channel()));
                     }
                 });
