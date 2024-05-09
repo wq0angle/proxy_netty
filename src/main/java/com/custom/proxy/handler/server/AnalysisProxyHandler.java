@@ -14,20 +14,17 @@ import javax.net.ssl.SSLException;
 @Slf4j
 public class AnalysisProxyHandler extends SimpleChannelInboundHandler<FullHttpRequest> {
 
-    private final SslContext sslContext;
-
-    public AnalysisProxyHandler() throws SSLException {
-        this.sslContext = SslContextBuilder.forClient().build();
-    }
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, FullHttpRequest request) {
 
         log.info("Request Method: {}, URI: {}, Headers: {}", request.method(), request.uri(), request.headers());
         String host;
         int port;
+        //携带特定的头部信息表示客户端代理的请求
         if (request.headers().contains("X-Target-Host")){
             host = request.headers().get("X-Target-Host");
             port = request.headers().getInt("X-Target-Port");
+            // 将请求方法改回为CONNECT | 目前暂时没用到, 后续若涉及请求处理时可以添加
             request.setMethod(HttpMethod.CONNECT);
             request.setUri((port == 443 ? "https" : "http") + "://" + host + ":" + port);
         }
@@ -47,8 +44,7 @@ public class AnalysisProxyHandler extends SimpleChannelInboundHandler<FullHttpRe
                 .handler(new ChannelInitializer<SocketChannel>() {
                     @Override
                     protected void initChannel(SocketChannel ch) {
-                        // 仅添加用于转发的handler
-//                        ch.pipeline().addLast(sslContext.newHandler(ch.alloc(), host, port)); // 添加 SSL 处理器
+                        // 仅添加用于转发的handler,代理服务端无需SSL处理，因为握手过程处理交由代理客户端处理
                         ch.pipeline().addLast(new RelayHandler(ctx.channel()));
                     }
                 });

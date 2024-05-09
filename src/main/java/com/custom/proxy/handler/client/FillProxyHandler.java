@@ -14,6 +14,8 @@ import lombok.extern.slf4j.Slf4j;
 
 import javax.net.ssl.SSLException;
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 
 @Slf4j
 public class FillProxyHandler extends SimpleChannelInboundHandler<FullHttpRequest> {
@@ -21,6 +23,7 @@ public class FillProxyHandler extends SimpleChannelInboundHandler<FullHttpReques
     private final String remoteHost;
     private final int remotePort;
     private final SslContext sslContext;
+
 
     public FillProxyHandler(String remoteHost, int remotePort) throws SSLException {
         this.remoteHost = remoteHost;
@@ -32,11 +35,13 @@ public class FillProxyHandler extends SimpleChannelInboundHandler<FullHttpReques
     protected void channelRead0(ChannelHandlerContext ctx, FullHttpRequest request) {
         if (request.method() == HttpMethod.CONNECT) {
             log.info("Received CONNECT request: {}", request.uri());
-            // 构建新的请求转发到服务端
+
+            // 构建新请求转发到服务端 | 隐藏url
             FullHttpRequest forwardRequest = new DefaultFullHttpRequest(
                     request.protocolVersion(), HttpMethod.POST, "/");
             forwardRequest.headers().set(request.headers());
 
+            //connect请求临时改为POST请求,携带host信息到请求头
             String host = request.uri().substring(0, request.uri().indexOf(":"));
             Integer port = Integer.parseInt(request.uri().substring(request.uri().indexOf(":") + 1));
             forwardRequest.headers().add("X-Target-Host", host);
@@ -68,7 +73,7 @@ public class FillProxyHandler extends SimpleChannelInboundHandler<FullHttpReques
                     future.channel().pipeline().remove(HttpClientCodec.class);
                     future.channel().pipeline().remove(HttpObjectAggregator.class);
                     future.channel().pipeline().addLast(new RelayHandler(future.channel()));
-                    //释放该请求的全局监听的http解析器,到此转换为SSL隧道的TCP通信模式
+                    //释放该请求的全局监听的http解析器,透明转发请求,在connect后面的请求彻底转换为SSL隧道的TCP通信模式
                     ctx.pipeline().remove(HttpServerCodec.class);
                     ctx.pipeline().remove(HttpObjectAggregator.class);
                     ctx.pipeline().remove(this.getClass());  // 移除当前处理器
@@ -88,8 +93,10 @@ public class FillProxyHandler extends SimpleChannelInboundHandler<FullHttpReques
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
         if (cause instanceof IOException && cause.getMessage().contains("Connection reset")) {
+            //客户端关闭连接
             log.info("Connection was reset by the peer");
         } else {
+            //其他过程异常输出到日志
             log.error("Error occurred in FillProxyHandler", cause);
         }
         ctx.close();

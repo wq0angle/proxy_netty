@@ -9,7 +9,7 @@ import java.security.KeyStore;
 
 public class SslContextProvider {
     public static SslContext getSslContext() throws Exception {
-        String keyStoreFilePath = "你的jks证书文件";
+        String keyStoreFilePath = "/root/tls/www.wq0angle.online.jks";
         String keyStorePassword = "123456";
 
         KeyStore keyStore = KeyStore.getInstance("JKS");
