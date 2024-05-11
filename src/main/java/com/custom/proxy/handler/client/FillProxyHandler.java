@@ -2,6 +2,7 @@ package com.custom.proxy.handler.client;
 
 import com.custom.proxy.handler.RelayHandler;
 import io.netty.bootstrap.Bootstrap;
+import io.netty.buffer.Unpooled;
 import io.netty.channel.*;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
@@ -10,10 +11,12 @@ import io.netty.handler.logging.LogLevel;
 import io.netty.handler.logging.LoggingHandler;
 import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslContextBuilder;
+import io.netty.util.CharsetUtil;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.net.ssl.SSLException;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -56,7 +59,7 @@ public class FillProxyHandler extends SimpleChannelInboundHandler<FullHttpReques
                         protected void initChannel(SocketChannel ch) {
                             // 仅添加用于转发的handler
                             ch.pipeline().addLast(sslContext.newHandler(ch.alloc(), remoteHost, remotePort)); // 添加 SSL 处理器
-//                            ch.pipeline().addLast(new LoggingHandler(LogLevel.INFO)); // 添加日志处理器，输出 SSL 握手过程中的详细信息
+                            ch.pipeline().addLast(new LoggingHandler(LogLevel.INFO)); // 添加日志处理器，输出 SSL 握手过程中的详细信息
                             ch.pipeline().addLast(new RelayHandler(ctx.channel()));
                         }
                     });

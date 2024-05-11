@@ -222,7 +222,7 @@ public class AppMain {
         int localPort = 8888;
         int remotePort = 5088;
         String remoteHost = "127.0.0.1";
-        ProxyServerHandler.start(remotePort);
+        new ProxyServerHandler().start(remotePort);
         ProxyClientHandler.start(localPort, remoteHost, remotePort);
     }
 }

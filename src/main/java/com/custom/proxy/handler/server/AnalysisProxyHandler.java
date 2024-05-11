@@ -2,14 +2,14 @@ package com.custom.proxy.handler.server;
 
 import com.custom.proxy.handler.RelayHandler;
 import io.netty.bootstrap.Bootstrap;
+import io.netty.buffer.Unpooled;
 import io.netty.channel.*;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.handler.codec.http.*;
-import io.netty.handler.ssl.SslContext;
-import io.netty.handler.ssl.SslContextBuilder;
+import io.netty.util.CharsetUtil;
 import lombok.extern.slf4j.Slf4j;
 
-import javax.net.ssl.SSLException;
+import java.nio.charset.StandardCharsets;
 
 @Slf4j
 public class AnalysisProxyHandler extends SimpleChannelInboundHandler<FullHttpRequest> {
@@ -20,18 +20,25 @@ public class AnalysisProxyHandler extends SimpleChannelInboundHandler<FullHttpRe
         log.info("Request Method: {}, URI: {}, Headers: {}", request.method(), request.uri(), request.headers());
         String host;
         int port;
-        //携带特定的头部信息表示客户端代理的请求
+
         if (request.headers().contains("X-Target-Host")){
+            //携带特定的头部信息表示客户端代理过来connect请求
             host = request.headers().get("X-Target-Host");
             port = request.headers().getInt("X-Target-Port");
-            // 将请求方法改回为CONNECT | 目前暂时没用到, 后续若涉及请求处理时可以添加
+            // 将请求方法改回为CONNECT
             request.setMethod(HttpMethod.CONNECT);
+            //connect请求的url一般为 host + port,不过在代理转发的过程中不重要了
             request.setUri((port == 443 ? "https" : "http") + "://" + host + ":" + port);
         }
         else {
-            String[] hostPort = request.uri().split(":");
-            host = hostPort[0];
-            port = hostPort.length == 2 ? Integer.parseInt(hostPort[1]) : 80;
+            // 不带X-Target-Host头部的请求，返回指定目录的HTML内容 | 一般为get或者post请求,url为地址后面路径
+            host = "127.0.0.1";
+            port = 5088;
+            if(request.uri().equals("/")){
+                request.setUri("/index.html");
+            }
+            // 修改请求的目标地址为本地HTTP代理的地址和端口
+            request.setUri("http://" + host + ":" + port + request.uri());
         }
         handleConnectRequest(ctx, request, host, port);
     }
@@ -52,9 +59,13 @@ public class AnalysisProxyHandler extends SimpleChannelInboundHandler<FullHttpRe
         ChannelFuture connectFuture = b.connect(host, port);
         connectFuture.addListener((ChannelFutureListener) future -> {
             if (future.isSuccess()) {
-                log.info("Connected to target server");
-                FullHttpResponse response = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.OK);
-                ctx.writeAndFlush(response);
+                if (request.method() == HttpMethod.CONNECT) {
+                    log.info("Connected to target server");
+                    FullHttpResponse response = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.OK);
+                    ctx.writeAndFlush(response);
+                }else {
+                    log.info("request body to target server");
+                }
                 // 移除HTTP处理器并设置透明转发
                 ctx.pipeline().remove(HttpServerCodec.class);
                 ctx.pipeline().remove(HttpObjectAggregator.class);
@@ -63,8 +74,9 @@ public class AnalysisProxyHandler extends SimpleChannelInboundHandler<FullHttpRe
             } else {
                 // 连接失败，向客户端发送 500 错误
                 ctx.writeAndFlush(new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.INTERNAL_SERVER_ERROR));
-//                ctx.close();
+                ctx.close();
             }
         });
     }
+
 }
