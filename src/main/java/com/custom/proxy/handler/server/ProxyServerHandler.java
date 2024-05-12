@@ -17,11 +17,10 @@ import java.io.File;
 @Slf4j
 public class ProxyServerHandler{
 
-    @Async
     public void start(int port) throws Exception {
         EventLoopGroup bossGroup = new NioEventLoopGroup();
         EventLoopGroup workerGroup = new NioEventLoopGroup();
-
+        Integer maxContentLength = 1024 * 1024 * 10; //设置最大响应体大小 10M
         try {
             ServerBootstrap b = new ServerBootstrap();
             b.group(bossGroup, workerGroup)
@@ -33,14 +32,14 @@ public class ProxyServerHandler{
                             SslContext sslContext = SslContextProvider.getSslContext();
                             p.addLast(sslContext.newHandler(ch.alloc()));
                             p.addLast(new HttpServerCodec());
-                            p.addLast(new HttpObjectAggregator(65536));
+                            p.addLast(new HttpObjectAggregator(maxContentLength));
                             p.addLast(new AnalysisProxyHandler());
                         }
                     });
 
             Channel ch = b.bind(port).sync().channel();
             log.info("代理服务端启动，监听端口: {}", port);
-            ch.closeFuture();
+            ch.closeFuture().sync();
         } finally {
             bossGroup.shutdownGracefully();
             workerGroup.shutdownGracefully();

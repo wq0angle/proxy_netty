@@ -16,6 +16,7 @@ public class ProxyClientHandler{
     public static void start(int localPort, String remoteHost, int remotePort) throws Exception {
         EventLoopGroup bossGroup = new NioEventLoopGroup();
         EventLoopGroup workerGroup = new NioEventLoopGroup();
+        Integer maxContentLength = 1024 * 1024 * 10;
         try {
             ServerBootstrap b = new ServerBootstrap();
             b.group(bossGroup, workerGroup)
@@ -26,7 +27,7 @@ public class ProxyClientHandler{
                         protected void initChannel(SocketChannel ch) throws SSLException {
                             ChannelPipeline p = ch.pipeline();
                             p.addLast(new HttpServerCodec());
-                            p.addLast(new HttpObjectAggregator(65536));
+                            p.addLast(new HttpObjectAggregator(maxContentLength));
                             p.addLast(new FillProxyHandler(remoteHost, remotePort));
                         }
                     });

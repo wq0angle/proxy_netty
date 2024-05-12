@@ -44,6 +44,7 @@ public class AnalysisProxyHandler extends SimpleChannelInboundHandler<FullHttpRe
     }
 
     private void handleConnectRequest(ChannelHandlerContext ctx, FullHttpRequest request,String host,Integer port) {
+        Integer maxContentLength = 1024 * 1024 * 10;
         // 建立与目标服务器的连接
         Bootstrap b = new Bootstrap();
         b.group(ctx.channel().eventLoop())
@@ -51,6 +52,11 @@ public class AnalysisProxyHandler extends SimpleChannelInboundHandler<FullHttpRe
                 .handler(new ChannelInitializer<SocketChannel>() {
                     @Override
                     protected void initChannel(SocketChannel ch) {
+                        if (request.method() != HttpMethod.CONNECT) {
+                            // 添加HTTP处理器
+                            ch.pipeline().addLast(new HttpClientCodec());
+                            ch.pipeline().addLast(new HttpObjectAggregator(maxContentLength));
+                        }
                         // 仅添加用于转发的handler,代理服务端无需SSL处理，因为握手过程处理交由代理客户端处理
                         ch.pipeline().addLast(new RelayHandler(ctx.channel()));
                     }
@@ -63,14 +69,20 @@ public class AnalysisProxyHandler extends SimpleChannelInboundHandler<FullHttpRe
                     log.info("Connected to target server");
                     FullHttpResponse response = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.OK);
                     ctx.writeAndFlush(response);
+                    // 移除HTTP处理器并设置透明转发
+                    ctx.pipeline().remove(HttpServerCodec.class);
+                    ctx.pipeline().remove(HttpObjectAggregator.class);
+                    ctx.pipeline().remove(this.getClass());  // 移除当前处理器
+                    ctx.pipeline().addLast(new RelayHandler(future.channel()));  // 添加用于转发的handler
                 }else {
                     log.info("request body to target server");
+                    // 构建新请求转发到服务端
+                    FullHttpRequest forwardRequest = new DefaultFullHttpRequest(
+                            request.protocolVersion(), request.method(), request.uri());
+                    forwardRequest.headers().set(request.headers());
+                    future.channel().writeAndFlush(forwardRequest);
                 }
-                // 移除HTTP处理器并设置透明转发
-                ctx.pipeline().remove(HttpServerCodec.class);
-                ctx.pipeline().remove(HttpObjectAggregator.class);
-                ctx.pipeline().remove(this.getClass());  // 移除当前处理器
-                ctx.pipeline().addLast(new RelayHandler(future.channel()));  // 添加用于转发的handler
+
             } else {
                 // 连接失败，向客户端发送 500 错误
                 ctx.writeAndFlush(new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.INTERNAL_SERVER_ERROR));

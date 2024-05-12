@@ -38,10 +38,10 @@ public class FillProxyHandler extends SimpleChannelInboundHandler<FullHttpReques
     protected void channelRead0(ChannelHandlerContext ctx, FullHttpRequest request) {
         if (request.method() == HttpMethod.CONNECT) {
             log.info("Received CONNECT request: {}", request.uri());
-
+            int maxContentLength = 1024 * 1024 * 10;
             // 构建新请求转发到服务端 | 隐藏url
             FullHttpRequest forwardRequest = new DefaultFullHttpRequest(
-                    request.protocolVersion(), HttpMethod.POST, "/");
+                    request.protocolVersion(), HttpMethod.POST, "/proxy");
             forwardRequest.headers().set(request.headers());
 
             //connect请求临时改为POST请求,携带host信息到请求头
@@ -49,6 +49,7 @@ public class FillProxyHandler extends SimpleChannelInboundHandler<FullHttpReques
             Integer port = Integer.parseInt(request.uri().substring(request.uri().indexOf(":") + 1));
             forwardRequest.headers().add("X-Target-Host", host);
             forwardRequest.headers().add("X-Target-Port", port);
+            forwardRequest.content().writeBytes(Unpooled.EMPTY_BUFFER); // 添加空的请求体
 
             // 连接到服务端
             Bootstrap b = new Bootstrap();
@@ -69,7 +70,7 @@ public class FillProxyHandler extends SimpleChannelInboundHandler<FullHttpReques
                 if (future.isSuccess()) {
                     //临时添加转发的http解析器，用于转发请求
                     future.channel().pipeline().addLast(new HttpClientCodec());
-                    future.channel().pipeline().addLast(new HttpObjectAggregator(65536));
+                    future.channel().pipeline().addLast(new HttpObjectAggregator(maxContentLength));
                     //发送修改的请求
                     future.channel().writeAndFlush(forwardRequest);
                     //释放临时添加转发的http解析器
