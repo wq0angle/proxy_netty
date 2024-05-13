@@ -49,7 +49,8 @@ public class FillProxyHandler extends SimpleChannelInboundHandler<FullHttpReques
             Integer port = Integer.parseInt(request.uri().substring(request.uri().indexOf(":") + 1));
             forwardRequest.headers().add("X-Target-Host", host);
             forwardRequest.headers().add("X-Target-Port", port);
-            forwardRequest.content().writeBytes(Unpooled.EMPTY_BUFFER); // 添加空的请求体
+            forwardRequest.headers().set("Host", remoteHost);
+            forwardRequest.content().writeBytes(Unpooled.EMPTY_BUFFER); // 添加空请求体
 
             // 连接到服务端
             Bootstrap b = new Bootstrap();

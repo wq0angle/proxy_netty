@@ -73,6 +73,12 @@
             <scope>compile</scope>
         </dependency>
 
+        <dependency>
+            <groupId>com.konghq</groupId>
+            <artifactId>unirest-java</artifactId>
+            <version>3.11.11</version>
+        </dependency>
+
     </dependencies>
 
     <build>

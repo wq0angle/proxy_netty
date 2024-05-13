@@ -29,6 +29,7 @@ public class AnalysisProxyHandler extends SimpleChannelInboundHandler<FullHttpRe
             request.setMethod(HttpMethod.CONNECT);
             //connect请求的url一般为 host + port,不过在代理转发的过程中不重要了
             request.setUri((port == 443 ? "https" : "http") + "://" + host + ":" + port);
+            request.headers().set("Host", host);
         }
         else {
             // 不带X-Target-Host头部的请求，返回指定目录的HTML内容 | 一般为get或者post请求,url为地址后面路径

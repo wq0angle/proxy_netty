@@ -16,7 +16,7 @@ public class ProxyServerConfig {
         return "附加服务执行完毕";
     }
 
-    @Async
+//    @Async
     public void proxyServerHandler() throws Exception {
         int port = 443; // 设置代理服务器端口号
         new ProxyServerHandler().start(port);
