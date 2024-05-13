@@ -43,6 +43,7 @@ public class SslContextProvider {
             } else if (hostname.startsWith("wq0angle.online") || hostname.startsWith("d31z4tkdw2rsym.cloudfront.net")) {
                 return sslContext2;
             } else {
+                log.info("SNI Fallback, hostname: {}", hostname);
                 return sslContext1; // SNI回落，若未命中匹配的规则，选择默认的SslContext
             }
         });
