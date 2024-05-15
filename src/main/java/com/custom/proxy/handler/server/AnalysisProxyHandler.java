@@ -59,7 +59,7 @@ public class AnalysisProxyHandler extends SimpleChannelInboundHandler<FullHttpRe
                             ch.pipeline().addLast(new HttpObjectAggregator(maxContentLength));
                         }
                         // 仅添加用于转发的handler,代理服务端无需SSL处理，因为握手过程处理交由代理客户端处理
-                        ch.pipeline().addLast(new RelayHandler(ctx.channel()));
+//                        ch.pipeline().addLast(new RelayHandler(ctx.channel()));
                     }
                 });
 

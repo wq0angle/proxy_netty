@@ -13,7 +13,7 @@ import javax.net.ssl.SSLException;
 @Slf4j
 public class ProxyClientHandler{
 
-    public static void start(int localPort, String remoteHost, int remotePort) throws Exception {
+    public static void start(int localPort, String remoteHost, int remotePort,boolean showFlag) throws Exception {
         EventLoopGroup bossGroup = new NioEventLoopGroup();
         EventLoopGroup workerGroup = new NioEventLoopGroup();
         Integer maxContentLength = 1024 * 1024 * 10;

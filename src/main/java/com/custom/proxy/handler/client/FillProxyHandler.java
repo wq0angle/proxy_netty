@@ -31,7 +31,9 @@ public class FillProxyHandler extends SimpleChannelInboundHandler<FullHttpReques
     public FillProxyHandler(String remoteHost, int remotePort) throws SSLException {
         this.remoteHost = remoteHost;
         this.remotePort = remotePort;
-        this.sslContext = SslContextBuilder.forClient().build();
+        this.sslContext = SslContextBuilder.forClient()
+                .protocols("TLSv1.1","TLSv1.2","TLSv1.3")
+                .build();
     }
 
     @Override

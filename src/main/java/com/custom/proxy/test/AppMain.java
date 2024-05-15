@@ -223,6 +223,6 @@ public class AppMain {
         int remotePort = 5088;
         String remoteHost = "127.0.0.1";
         new ProxyServerHandler().start(remotePort);
-        ProxyClientHandler.start(localPort, remoteHost, remotePort);
+        ProxyClientHandler.start(localPort, remoteHost, remotePort,false);
     }
 }

@@ -3,6 +3,7 @@ package com.custom.proxy.provider;
 import io.netty.handler.ssl.SniHandler;
 import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslContextBuilder;
+import io.netty.util.internal.StringUtil;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.net.ssl.KeyManagerFactory;
@@ -33,18 +34,25 @@ public class SslContextProvider {
         KeyManagerFactory keyManagerFactory = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
         keyManagerFactory.init(keyStore, keyStorePassword.toCharArray());
 
-        return SslContextBuilder.forServer(keyManagerFactory).build();
+        return SslContextBuilder
+                .forServer(keyManagerFactory)
+                .protocols("TLSv1.1","TLSv1.2","TLSv1.3")
+                .build();
     }
 
     public static SniHandler getSniHandler(SslContext sslContext1, SslContext sslContext2) {
         return new SniHandler(hostname -> {
-            if (hostname.startsWith("wq0angle.fun")) {
+            if (StringUtil.isNullOrEmpty(hostname)){
+                log.info("SNI Fallback, hostname is null");
+                return sslContext2;
+            }
+            if (hostname.contains("wq0angle.fun")) {
                 return sslContext1;
-            } else if (hostname.startsWith("wq0angle.online") || hostname.startsWith("d31z4tkdw2rsym.cloudfront.net")) {
+            } else if (hostname.contains("wq0angle.online")) {
                 return sslContext2;
             } else {
                 log.info("SNI Fallback, hostname: {}", hostname);
-                return sslContext1; // SNI回落，若未命中匹配的规则，选择默认的SslContext
+                return sslContext2; // SNI回落，若未命中匹配的规则，选择默认的SslContext
             }
         });
     }
