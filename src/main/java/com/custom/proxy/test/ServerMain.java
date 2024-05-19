@@ -12,7 +12,7 @@ public class ServerMain {
         String websiteDirectory = "C:\\Users\\86177\\Desktop\\blog";
         new WebsiteServerHandler().start(ipAddress, port, websiteDirectory);
 
-        int remotePort = 4433;
+        int remotePort = 6088;
         new ProxyServerHandler().start(remotePort);
     }
 }

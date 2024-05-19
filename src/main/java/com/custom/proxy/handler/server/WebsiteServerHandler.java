@@ -2,6 +2,10 @@ package com.custom.proxy.handler.server;
 
 import com.sun.net.httpserver.HttpServer;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.scheduling.annotation.Async;
+import org.springframework.scheduling.annotation.EnableAsync;
+import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
 
 import java.io.File;
 import java.io.IOException;
@@ -9,8 +13,11 @@ import java.net.InetSocketAddress;
 import java.nio.file.Files;
 
 @Slf4j
+@EnableAsync
+@Component
 public class WebsiteServerHandler {
 
+    @Async
     public void start(String ipAddress,Integer port,String websiteDirectory) throws IOException {
 
         HttpServer server = HttpServer.create(new InetSocketAddress(ipAddress, port), 0);

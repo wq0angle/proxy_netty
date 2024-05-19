@@ -8,6 +8,8 @@ public class ReqMain {
     {
         HttpResponse<String> response = Unirest.post("https://www.wq0angle.online/")
                 .header("Host","www.wq0angle.online")
+                .header("X-Target-Host","fanyi.baidu.com")
+                .header("X-Target-Port","443")
                 .asString();
 
         System.out.println(response.getBody());
