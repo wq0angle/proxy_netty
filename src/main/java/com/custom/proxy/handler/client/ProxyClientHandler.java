@@ -1,5 +1,6 @@
 package com.custom.proxy.handler.client;
 
+import com.custom.proxy.provider.CertificateProvider;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;
@@ -16,6 +17,8 @@ import javax.net.ssl.SSLException;
 public class ProxyClientHandler{
 
     public static void start(int localPort, String remoteHost, int remotePort) throws Exception {
+        CertificateProvider.getInstance().buildSslFile();
+
         EventLoopGroup bossGroup = new NioEventLoopGroup();
         EventLoopGroup workerGroup = new NioEventLoopGroup();
         Integer maxContentLength = 1024 * 1024 * 10;
@@ -26,7 +29,7 @@ public class ProxyClientHandler{
                     .handler(new LoggingHandler(LogLevel.INFO))
                     .childHandler(new ChannelInitializer<SocketChannel>() {
                         @Override
-                        protected void initChannel(SocketChannel ch) throws SSLException {
+                        protected void initChannel(SocketChannel ch) throws Exception {
                             ChannelPipeline p = ch.pipeline();
                             p.addLast(new HttpServerCodec());
                             p.addLast(new HttpObjectAggregator(maxContentLength));

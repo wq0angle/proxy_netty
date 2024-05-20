@@ -1,6 +1,8 @@
 package com.custom.proxy.handler.client;
 
+import com.custom.proxy.handler.HttpRequestHandler;
 import com.custom.proxy.handler.RelayHandler;
+import com.custom.proxy.provider.CertificateProvider;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.*;
 import io.netty.channel.socket.SocketChannel;
@@ -12,7 +14,7 @@ import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslContextBuilder;
 import lombok.extern.slf4j.Slf4j;
 
-import javax.net.ssl.SSLException;
+import javax.net.ssl.TrustManager;
 import java.io.IOException;
 
 @Slf4j
@@ -22,7 +24,7 @@ public class FillProxyHandler extends SimpleChannelInboundHandler<FullHttpReques
     private final int remotePort;
     private final SslContext sslContext;
 
-    public FillProxyHandler(String remoteHost, int remotePort) throws SSLException {
+    public FillProxyHandler(String remoteHost, int remotePort) throws Exception {
         this.remoteHost = remoteHost;
         this.remotePort = remotePort;
         this.sslContext = SslContextBuilder.forClient()
@@ -32,19 +34,43 @@ public class FillProxyHandler extends SimpleChannelInboundHandler<FullHttpReques
     }
 
     @Override
-    protected void channelRead0(ChannelHandlerContext ctx, FullHttpRequest request) {
+    protected void channelRead0(ChannelHandlerContext ctx, FullHttpRequest request) throws Exception {
         if (request.method() == HttpMethod.CONNECT) {
             log.info("Received CONNECT request: {}", request.uri());
-            handleConnect(ctx, request);
+//            handleConnect(ctx, request);
+            showHandleConnect(ctx, request);
         } else {
             // 直接转发其他请求
-//            ctx.fireChannelRead(request.retain());
-            int maxContentLength = 1024 * 1024 * 10;
-            ctx.pipeline().addLast(new LoggingHandler(LogLevel.INFO)); // 添加日志处理器，输出 SSL 握手过程中的详细信息
-            ctx.pipeline().addLast(new HttpServerCodec());
-            ctx.pipeline().addLast(new HttpObjectAggregator(maxContentLength));
-            ctx.pipeline().addLast(new RelayHandler(ctx.channel()));
+            ctx.fireChannelRead(request.retain());
         }
+    }
+
+    private void showHandleConnect(ChannelHandlerContext ctx, FullHttpRequest request) throws Exception {
+        String host = request.uri().substring(0, request.uri().indexOf(":"));
+        int port = Integer.parseInt(request.uri().substring(request.uri().indexOf(":") + 1));
+
+        // 发送 200 OK 响应，表示隧道已建立
+        FullHttpResponse response = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.OK);
+        ctx.writeAndFlush(response);
+
+        // 移除 HTTP 相关的处理器
+        ctx.pipeline().remove(HttpServerCodec.class);
+        ctx.pipeline().remove(HttpObjectAggregator.class);
+
+        // 添加 SSL 处理器，用于解密来自客户端的流量
+        SslContext sslCtx = CertificateProvider.getInstance().createTargetSslContext(host);
+        ctx.pipeline().addLast(sslCtx.newHandler(ctx.alloc()));
+
+        // 添加 HTTP 编解码器，用于解析解密后的 HTTP 消息
+        int maxContentLength = 1024 * 1024 * 10;
+        ctx.pipeline().addLast(new HttpServerCodec());
+        ctx.pipeline().addLast(new HttpObjectAggregator(maxContentLength));
+
+        // 添加自定义处理器，用于修改解密后的 HTTP 请求
+        ctx.pipeline().addLast(new HttpRequestHandler());
+
+        // 添加用于转发修改后的请求的处理器
+//        ctx.pipeline().addLast(new RelayHandler(ctx.channel()));
     }
 
     private void handleConnect(ChannelHandlerContext ctx, FullHttpRequest request) {
@@ -55,7 +81,6 @@ public class FillProxyHandler extends SimpleChannelInboundHandler<FullHttpReques
         // 构建新请求转发到服务端 | 隐藏url
         FullHttpRequest forwardRequest = new DefaultFullHttpRequest(
                 request.protocolVersion(), HttpMethod.POST, "/proxy");
-        forwardRequest.headers().set(request.headers());
 
         //connect请求临时改为POST请求,携带host信息到请求头
         forwardRequest.headers().add("X-Target-Url", request.uri());
@@ -72,7 +97,8 @@ public class FillProxyHandler extends SimpleChannelInboundHandler<FullHttpReques
                     @Override
                     protected void initChannel(SocketChannel ch) throws Exception {
                         // 仅添加用于转发的handler
-                        ch.pipeline().addLast(sslContext.newHandler(ch.alloc(), remoteHost, remotePort)); // 添加 SSL 处理器
+                        ch.pipeline().addLast(sslContext.newHandler(ch.alloc(), host, remotePort)); // 添加 SSL 处理器
+                        ch.pipeline().addLast();
                         ch.pipeline().addLast(new LoggingHandler(LogLevel.INFO)); // 添加日志处理器，输出 SSL 握手过程中的详细信息
                         ch.pipeline().addLast(new RelayHandler(ctx.channel()));
                     }
@@ -81,6 +107,9 @@ public class FillProxyHandler extends SimpleChannelInboundHandler<FullHttpReques
         ChannelFuture connectFuture = b.connect(remoteHost, remotePort);
         connectFuture.addListener((ChannelFutureListener) future -> {
             if (future.isSuccess()) {
+                FullHttpResponse response = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.OK);
+                ctx.writeAndFlush(response);
+                ctx.pipeline().addLast(new RelayHandler(future.channel()));  // 添加用于转发的handler
                 //临时添加转发的http解析器，用于转发请求
                 future.channel().pipeline().addLast(new HttpClientCodec());
                 future.channel().pipeline().addLast(new HttpObjectAggregator(maxContentLength));
