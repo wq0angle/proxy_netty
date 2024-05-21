@@ -3,6 +3,7 @@ package com.custom.proxy.provider;
 
 import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslContextBuilder;
+import io.netty.handler.ssl.SslProvider;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.bouncycastle.asn1.x500.X500Name;
@@ -13,9 +14,7 @@ import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.bouncycastle.operator.ContentSigner;
 import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
 
-import javax.net.ssl.HttpsURLConnection;
-import javax.net.ssl.SSLContext;
-import javax.net.ssl.TrustManagerFactory;
+import javax.net.ssl.*;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.math.BigInteger;
@@ -90,7 +89,7 @@ public class CertificateProvider {
         HttpsURLConnection.setDefaultSSLSocketFactory(sc.getSocketFactory());
     }
 
-    public SslContext createTargetSslContext(String host) throws Exception {
+    public SSLContext createTargetSslContext(String host) throws Exception {
         KeyPair keyPair = buildKeyPair();
 
         X500Name issuer = new X500Name("CN=My Custom Root CA, O=My Company, L=My City, ST=My State, C=My Country Code"); // 根证书的信息
@@ -106,10 +105,26 @@ public class CertificateProvider {
         ContentSigner signer = new JcaContentSignerBuilder("SHA256WithRSAEncryption").build(privateKey); // 使用根证书的私钥签名
         X509Certificate targetCert = new JcaX509CertificateConverter().setProvider(new BouncyCastleProvider()).getCertificate(builder.build(signer));
 
-        // 将证书和私钥转换为 Netty 所需的格式
-        return SslContextBuilder
-                .forServer(privateKey, targetCert)
-                .build();
+        // 创建 KeyStore 并加载证书和私钥
+        KeyStore keyStore = KeyStore.getInstance(KeyStore.getDefaultType());
+        keyStore.load(null, null);
+        keyStore.setCertificateEntry("rootCert", targetCert);
+        keyStore.setKeyEntry("privateKey", privateKey, null, new java.security.cert.Certificate[]{targetCert});
+
+        // 初始化 KeyManagerFactory 和 TrustManagerFactory
+        KeyManagerFactory kmf = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
+        kmf.init(keyStore, null);
+
+        TrustManagerFactory tmf = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
+        tmf.init(keyStore);
+
+        // 创建并初始化 SSLContext
+        SSLContext sslContext = SSLContext.getInstance("TLS");
+        sslContext.init(kmf.getKeyManagers(), tmf.getTrustManagers(), new SecureRandom());
+
+//        HttpsURLConnection.setDefaultSSLSocketFactory(sslContext.getSocketFactory());
+
+        return sslContext;
     }
 
     public static CertificateProvider getInstance() throws Exception {
@@ -117,7 +132,7 @@ public class CertificateProvider {
             instance = new CertificateProvider();
             KeyPair keyPair = buildKeyPair();
             instance.setPrivateKey(keyPair.getPrivate());
-            instance.setX509Certificate(instance.buildCertificate(buildKeyPair()));
+            instance.setX509Certificate(instance.buildRootCertificate(buildKeyPair()));
         }
         return instance;
     }
@@ -135,7 +150,21 @@ public class CertificateProvider {
         return generator.generateKeyPair();
     }
 
-    private X509Certificate buildCertificate(KeyPair keyPair) throws Exception {
+    public SslContext convertToNettySslContext(SSLContext sslContext) throws Exception {
+        // 从 SSLContext 中提取 KeyManager 和 TrustManager
+        KeyManagerFactory kmf = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
+        kmf.init(null, null);
+
+        TrustManagerFactory tmf = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
+        tmf.init((KeyStore) null);
+
+        // 使用 Netty 的 SslContextBuilder 创建 SslContext
+        return SslContextBuilder.forServer(kmf)
+                .trustManager(tmf)
+                .build();
+    }
+
+    private X509Certificate buildRootCertificate(KeyPair keyPair) throws Exception {
         long now = System.currentTimeMillis();
         Date startDate = new Date(now);
 
