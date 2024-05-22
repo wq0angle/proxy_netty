@@ -9,10 +9,12 @@ import lombok.extern.slf4j.Slf4j;
 import org.bouncycastle.asn1.pkcs.PrivateKeyInfo;
 import org.bouncycastle.asn1.x500.X500Name;
 import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo;
+import org.bouncycastle.cert.X509CertificateHolder;
 import org.bouncycastle.cert.X509v1CertificateBuilder;
 import org.bouncycastle.cert.jcajce.JcaX509CertificateConverter;
 import org.bouncycastle.cert.jcajce.JcaX509v1CertificateBuilder;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
+import org.bouncycastle.openssl.PEMKeyPair;
 import org.bouncycastle.openssl.PEMParser;
 import org.bouncycastle.openssl.jcajce.JcaPEMKeyConverter;
 import org.bouncycastle.openssl.jcajce.JcaPEMWriter;
@@ -20,10 +22,7 @@ import org.bouncycastle.operator.ContentSigner;
 import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
 
 import javax.net.ssl.*;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileReader;
-import java.io.FileWriter;
+import java.io.*;
 import java.math.BigInteger;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -43,54 +42,59 @@ public class CertificateProvider {
 
     }
 
-    public static KeyPair loadKeyPair(Path keyPath) throws Exception {
-        try (PEMParser pemParser = new PEMParser(new FileReader(keyPath.toFile()))) {
-            JcaPEMKeyConverter converter = new JcaPEMKeyConverter().setProvider("BC");
-            return new KeyPair(converter.getPublicKey(SubjectPublicKeyInfo.getInstance(pemParser.readObject()))
-                    , converter.getPrivateKey(PrivateKeyInfo.getInstance(pemParser.readObject())));
+    private static PrivateKey loadPrivateKey(Path keyPath) throws Exception {
+        try (FileReader fileReader = new FileReader(keyPath.toFile());
+             PEMParser pemParser = new PEMParser(fileReader)) {
+
+            Object object = pemParser.readObject();
+            if (object instanceof PEMKeyPair pemKeyPair) {
+                PrivateKeyInfo privateKeyInfo = pemKeyPair.getPrivateKeyInfo();
+                return new JcaPEMKeyConverter().getPrivateKey(privateKeyInfo);
+            } else if (object instanceof PrivateKeyInfo privateKeyInfo) {
+                return new JcaPEMKeyConverter().getPrivateKey(privateKeyInfo);
+            } else {
+                throw new IllegalArgumentException("Invalid key format");
+            }
         }
     }
 
-    public static X509Certificate loadCertificate(Path certPath) throws Exception {
-        try (FileInputStream fis = new FileInputStream(certPath.toFile())) {
-            CertificateFactory cf = CertificateFactory.getInstance("X.509");
-            return (X509Certificate) cf.generateCertificate(fis);
+    private static X509Certificate loadCertificate(Path certPath) throws Exception {
+        try (FileReader fileReader = new FileReader(certPath.toFile());
+             PEMParser pemParser = new PEMParser(fileReader)) {
+
+            X509CertificateHolder certificateHolder = (X509CertificateHolder) pemParser.readObject();
+            CertificateFactory certificateFactory = CertificateFactory.getInstance("X.509");
+            return (X509Certificate) certificateFactory.generateCertificate(
+                    new ByteArrayInputStream(certificateHolder.getEncoded()));
         }
     }
+
 
     public static SSLContext createTargetSslContext(String host) throws Exception {
         // 获取当前工作目录
         Path currentWorkingDir = Paths.get(System.getProperty("user.dir"));
         Path certPath = currentWorkingDir.resolve("tls").resolve("rootCertificate.crt");
-        Path keyPath = currentWorkingDir.resolve("tls").resolve("rootPrivateKey.crt");
+        Path keyPath = currentWorkingDir.resolve("tls").resolve("rootPrivateKey.key");
 
-        KeyPair keyPair = loadKeyPair(keyPath);
-        X509Certificate rootCertificate = loadCertificate(certPath);
+        X509Certificate certificate = loadCertificate(certPath);
+        PrivateKey privateKey = loadPrivateKey(keyPath);
 
-        X500Name issuer = new X500Name("CN=My Custom Root CA, O=My Company, L=My City, ST=My State, C=My Country Code");
-        X500Name subject = new X500Name("CN=" + host + ", O=YourOrg, C=CN");
-
-        BigInteger serial = BigInteger.valueOf(System.currentTimeMillis());
-        Date notBefore = new Date(System.currentTimeMillis() - 1000L * 60 * 60 * 24);
-        Date notAfter = new Date(System.currentTimeMillis() + 1000L * 60 * 60 * 24 * 365);
-
-        X509v1CertificateBuilder builder = new JcaX509v1CertificateBuilder(issuer, serial, notBefore, notAfter, subject, keyPair.getPublic());
-        ContentSigner signer = new JcaContentSignerBuilder("SHA256WithRSAEncryption").build(keyPair.getPrivate());
-        X509Certificate targetCert = new JcaX509CertificateConverter().setProvider(new BouncyCastleProvider()).getCertificate(builder.build(signer));
-
+        // 创建 KeyStore 并加载证书和私钥
         KeyStore keyStore = KeyStore.getInstance(KeyStore.getDefaultType());
         keyStore.load(null, null);
-        keyStore.setCertificateEntry("rootCert", targetCert);
-        keyStore.setKeyEntry("privateKey", keyPair.getPrivate(), null, new java.security.cert.Certificate[]{targetCert});
+        keyStore.setCertificateEntry("cert", certificate);
+        keyStore.setKeyEntry("key", privateKey, new char[0], new java.security.cert.Certificate[]{certificate});
 
+        // 初始化 KeyManagerFactory 和 TrustManagerFactory
         KeyManagerFactory kmf = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
-        kmf.init(keyStore, null);
+        kmf.init(keyStore, new char[0]);
 
         TrustManagerFactory tmf = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
         tmf.init(keyStore);
 
+        // 创建并初始化 SSLContext
         SSLContext sslContext = SSLContext.getInstance("TLS");
-        sslContext.init(kmf.getKeyManagers(), tmf.getTrustManagers(), new SecureRandom());
+        sslContext.init(kmf.getKeyManagers(), tmf.getTrustManagers(), null);
 
         return sslContext;
     }

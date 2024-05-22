@@ -12,10 +12,12 @@ import io.netty.handler.logging.LogLevel;
 import io.netty.handler.logging.LoggingHandler;
 import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslContextBuilder;
+import io.netty.handler.ssl.SslHandler;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLEngine;
 import javax.net.ssl.TrustManager;
 import java.io.IOException;
 
@@ -61,8 +63,10 @@ public class FillProxyHandler extends SimpleChannelInboundHandler<FullHttpReques
 
         // 添加 SSL 处理器，用于解密来自客户端的流量
         SSLContext sslCtx = CertificateProvider.createTargetSslContext(host);
+        SSLEngine sslEngine = sslCtx.createSSLEngine();
+        sslEngine.setUseClientMode(false); // 设置为服务器模式
 
-        ctx.pipeline().addLast(sslCtx.createSSLEngine()));
+        ctx.pipeline().addLast(new SslHandler(sslEngine));
 
         // 添加 HTTP 编解码器，用于解析解密后的 HTTP 消息
         int maxContentLength = 1024 * 1024 * 10;
