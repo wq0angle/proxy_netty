@@ -60,10 +60,9 @@ public class FillProxyHandler extends SimpleChannelInboundHandler<FullHttpReques
         ctx.pipeline().remove(HttpObjectAggregator.class);
 
         // 添加 SSL 处理器，用于解密来自客户端的流量
-        SSLContext sslCtx = CertificateProvider.getInstance().createTargetSslContext(host);
-        SslContext nettySslContext = CertificateProvider.getInstance().convertToNettySslContext(sslCtx);
+        SSLContext sslCtx = CertificateProvider.createTargetSslContext(host);
 
-        ctx.pipeline().addLast(nettySslContext.newHandler(ctx.alloc()));
+        ctx.pipeline().addLast(sslCtx.createSSLEngine()));
 
         // 添加 HTTP 编解码器，用于解析解密后的 HTTP 消息
         int maxContentLength = 1024 * 1024 * 10;

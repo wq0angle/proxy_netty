@@ -17,7 +17,7 @@ import javax.net.ssl.SSLException;
 public class ProxyClientHandler{
 
     public static void start(int localPort, String remoteHost, int remotePort) throws Exception {
-        CertificateProvider.getInstance().buildSslFile();
+        CertificateProvider.buildSslFile();
 
         EventLoopGroup bossGroup = new NioEventLoopGroup();
         EventLoopGroup workerGroup = new NioEventLoopGroup();

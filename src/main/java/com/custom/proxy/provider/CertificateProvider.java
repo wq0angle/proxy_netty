@@ -6,17 +6,24 @@ import io.netty.handler.ssl.SslContextBuilder;
 import io.netty.handler.ssl.SslProvider;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
+import org.bouncycastle.asn1.pkcs.PrivateKeyInfo;
 import org.bouncycastle.asn1.x500.X500Name;
+import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo;
 import org.bouncycastle.cert.X509v1CertificateBuilder;
 import org.bouncycastle.cert.jcajce.JcaX509CertificateConverter;
 import org.bouncycastle.cert.jcajce.JcaX509v1CertificateBuilder;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
+import org.bouncycastle.openssl.PEMParser;
+import org.bouncycastle.openssl.jcajce.JcaPEMKeyConverter;
+import org.bouncycastle.openssl.jcajce.JcaPEMWriter;
 import org.bouncycastle.operator.ContentSigner;
 import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
 
 import javax.net.ssl.*;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.FileWriter;
 import java.math.BigInteger;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -32,15 +39,63 @@ import java.util.Date;
 @Slf4j
 public class CertificateProvider {
 
-    private static CertificateProvider instance;
-    private X509Certificate x509Certificate;
-    private PrivateKey privateKey;
-
     private CertificateProvider(){
 
     }
 
-    public void buildSslFile() {
+    public static KeyPair loadKeyPair(Path keyPath) throws Exception {
+        try (PEMParser pemParser = new PEMParser(new FileReader(keyPath.toFile()))) {
+            JcaPEMKeyConverter converter = new JcaPEMKeyConverter().setProvider("BC");
+            return new KeyPair(converter.getPublicKey(SubjectPublicKeyInfo.getInstance(pemParser.readObject()))
+                    , converter.getPrivateKey(PrivateKeyInfo.getInstance(pemParser.readObject())));
+        }
+    }
+
+    public static X509Certificate loadCertificate(Path certPath) throws Exception {
+        try (FileInputStream fis = new FileInputStream(certPath.toFile())) {
+            CertificateFactory cf = CertificateFactory.getInstance("X.509");
+            return (X509Certificate) cf.generateCertificate(fis);
+        }
+    }
+
+    public static SSLContext createTargetSslContext(String host) throws Exception {
+        // 获取当前工作目录
+        Path currentWorkingDir = Paths.get(System.getProperty("user.dir"));
+        Path certPath = currentWorkingDir.resolve("tls").resolve("rootCertificate.crt");
+        Path keyPath = currentWorkingDir.resolve("tls").resolve("rootPrivateKey.crt");
+
+        KeyPair keyPair = loadKeyPair(keyPath);
+        X509Certificate rootCertificate = loadCertificate(certPath);
+
+        X500Name issuer = new X500Name("CN=My Custom Root CA, O=My Company, L=My City, ST=My State, C=My Country Code");
+        X500Name subject = new X500Name("CN=" + host + ", O=YourOrg, C=CN");
+
+        BigInteger serial = BigInteger.valueOf(System.currentTimeMillis());
+        Date notBefore = new Date(System.currentTimeMillis() - 1000L * 60 * 60 * 24);
+        Date notAfter = new Date(System.currentTimeMillis() + 1000L * 60 * 60 * 24 * 365);
+
+        X509v1CertificateBuilder builder = new JcaX509v1CertificateBuilder(issuer, serial, notBefore, notAfter, subject, keyPair.getPublic());
+        ContentSigner signer = new JcaContentSignerBuilder("SHA256WithRSAEncryption").build(keyPair.getPrivate());
+        X509Certificate targetCert = new JcaX509CertificateConverter().setProvider(new BouncyCastleProvider()).getCertificate(builder.build(signer));
+
+        KeyStore keyStore = KeyStore.getInstance(KeyStore.getDefaultType());
+        keyStore.load(null, null);
+        keyStore.setCertificateEntry("rootCert", targetCert);
+        keyStore.setKeyEntry("privateKey", keyPair.getPrivate(), null, new java.security.cert.Certificate[]{targetCert});
+
+        KeyManagerFactory kmf = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
+        kmf.init(keyStore, null);
+
+        TrustManagerFactory tmf = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
+        tmf.init(keyStore);
+
+        SSLContext sslContext = SSLContext.getInstance("TLS");
+        sslContext.init(kmf.getKeyManagers(), tmf.getTrustManagers(), new SecureRandom());
+
+        return sslContext;
+    }
+
+    public static void buildSslFile() {
         try {
             // 获取当前工作目录
             Path currentWorkingDir = Paths.get(System.getProperty("user.dir"));
@@ -53,95 +108,30 @@ public class CertificateProvider {
                 Files.createDirectories(tlsDir);
             }
 
-            // 创建证书文件的路径
+            // 创建证书文件和私钥文件的路径
             Path certPath = tlsDir.resolve("rootCertificate.crt");
+            Path keyPath = tlsDir.resolve("rootPrivateKey.key");
 
-            // 写入或覆盖证书文件
-            Files.write(certPath, x509Certificate.getEncoded());
 
-            log.info("Root certificate written to {}", certPath);
-        } catch (Exception e) {
-            log.error("Error writing root certificate: {}", e.getMessage(), e);
-        }
-    }
+            // 判断证书文件和私钥文件是否已经存在
+            if (!Files.exists(certPath) || !Files.exists(keyPath)) {
+                KeyPair rootKeyPair = buildKeyPair();
+                X509Certificate rootCertificate = buildRootCertificate(rootKeyPair);
 
-    public void loadSslFile(Path certPath) throws Exception {
-        TrustManagerFactory tmf = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
-        KeyStore ks = KeyStore.getInstance(KeyStore.getDefaultType());
+                // 使用JcaPEMWriter将证书写入文件
+                try (JcaPEMWriter certWriter = new JcaPEMWriter(new FileWriter(certPath.toFile()));
+                     JcaPEMWriter keyWriter = new JcaPEMWriter(new FileWriter(keyPath.toFile()))) {
+                    certWriter.writeObject(rootCertificate);
+                    keyWriter.writeObject(rootKeyPair.getPrivate());
+                }
 
-        // 初始化KeyStore
-        ks.load(null, null); // 加载一个空的KeyStore，无需密码
-
-        // 从文件加载证书
-        try (FileInputStream fis = new FileInputStream(certPath.toFile())) {
-            CertificateFactory cf = CertificateFactory.getInstance("X.509");
-            while (fis.available() > 0) {
-                Certificate cert = cf.generateCertificate(fis);
-                ks.setCertificateEntry("rootCert", cert); // 添加证书到KeyStore
+                log.info("Root certificate and private key written to {}", tlsDir);
+            } else {
+                log.info("Root certificate or private key already exists at {}", tlsDir);
             }
+        } catch (Exception e) {
+            log.error("Error writing root certificate or private key: {}", e.getMessage(), e);
         }
-
-        tmf.init(ks);
-
-        SSLContext sc = SSLContext.getInstance("TLS");
-        sc.init(null, tmf.getTrustManagers(), new SecureRandom());
-
-        HttpsURLConnection.setDefaultSSLSocketFactory(sc.getSocketFactory());
-    }
-
-    public SSLContext createTargetSslContext(String host) throws Exception {
-        KeyPair keyPair = buildKeyPair();
-
-        X500Name issuer = new X500Name("CN=My Custom Root CA, O=My Company, L=My City, ST=My State, C=My Country Code"); // 根证书的信息
-        X500Name subject = new X500Name("CN=" + host + ", O=YourOrg, C=CN"); // 动态生成的证书的信息
-
-        BigInteger serial = BigInteger.valueOf(System.currentTimeMillis());
-        Date notBefore = new Date(System.currentTimeMillis() - 1000L * 60 * 60 * 24);
-        Date notAfter = new Date(System.currentTimeMillis() + 1000L * 60 * 60 * 24 * 365);
-
-        X509v1CertificateBuilder builder = new JcaX509v1CertificateBuilder(
-                issuer, serial, notBefore, notAfter, subject, keyPair.getPublic());
-
-        ContentSigner signer = new JcaContentSignerBuilder("SHA256WithRSAEncryption").build(privateKey); // 使用根证书的私钥签名
-        X509Certificate targetCert = new JcaX509CertificateConverter().setProvider(new BouncyCastleProvider()).getCertificate(builder.build(signer));
-
-        // 创建 KeyStore 并加载证书和私钥
-        KeyStore keyStore = KeyStore.getInstance(KeyStore.getDefaultType());
-        keyStore.load(null, null);
-        keyStore.setCertificateEntry("rootCert", targetCert);
-        keyStore.setKeyEntry("privateKey", privateKey, null, new java.security.cert.Certificate[]{targetCert});
-
-        // 初始化 KeyManagerFactory 和 TrustManagerFactory
-        KeyManagerFactory kmf = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
-        kmf.init(keyStore, null);
-
-        TrustManagerFactory tmf = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
-        tmf.init(keyStore);
-
-        // 创建并初始化 SSLContext
-        SSLContext sslContext = SSLContext.getInstance("TLS");
-        sslContext.init(kmf.getKeyManagers(), tmf.getTrustManagers(), new SecureRandom());
-
-//        HttpsURLConnection.setDefaultSSLSocketFactory(sslContext.getSocketFactory());
-
-        return sslContext;
-    }
-
-    public static CertificateProvider getInstance() throws Exception {
-        if(instance == null){
-            instance = new CertificateProvider();
-            KeyPair keyPair = buildKeyPair();
-            instance.setPrivateKey(keyPair.getPrivate());
-            instance.setX509Certificate(instance.buildRootCertificate(buildKeyPair()));
-        }
-        return instance;
-    }
-
-    public SslContext createSslContext() throws Exception {
-        // 将证书和私钥转换为 Netty 所需的格式
-        return SslContextBuilder
-                .forServer(privateKey, x509Certificate)
-                .build();
     }
 
     private static KeyPair buildKeyPair() throws NoSuchAlgorithmException {
@@ -150,21 +140,8 @@ public class CertificateProvider {
         return generator.generateKeyPair();
     }
 
-    public SslContext convertToNettySslContext(SSLContext sslContext) throws Exception {
-        // 从 SSLContext 中提取 KeyManager 和 TrustManager
-        KeyManagerFactory kmf = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
-        kmf.init(null, null);
 
-        TrustManagerFactory tmf = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
-        tmf.init((KeyStore) null);
-
-        // 使用 Netty 的 SslContextBuilder 创建 SslContext
-        return SslContextBuilder.forServer(kmf)
-                .trustManager(tmf)
-                .build();
-    }
-
-    private X509Certificate buildRootCertificate(KeyPair keyPair) throws Exception {
+    private static X509Certificate buildRootCertificate(KeyPair rootKeyPair) throws Exception {
         long now = System.currentTimeMillis();
         Date startDate = new Date(now);
 
@@ -180,10 +157,10 @@ public class CertificateProvider {
 
         String signatureAlgorithm = "SHA256WithRSA"; // Signature algorithm
 
-        ContentSigner contentSigner = new JcaContentSignerBuilder(signatureAlgorithm).build(keyPair.getPrivate());
+        ContentSigner contentSigner = new JcaContentSignerBuilder(signatureAlgorithm).build(rootKeyPair.getPrivate());
 
         X509v1CertificateBuilder certBuilder = new JcaX509v1CertificateBuilder(dnName, certSerialNumber, startDate
-                , endDate, dnName, keyPair.getPublic());
+                , endDate, dnName, rootKeyPair.getPublic());
 
         return new JcaX509CertificateConverter()
                 .setProvider(new BouncyCastleProvider())
