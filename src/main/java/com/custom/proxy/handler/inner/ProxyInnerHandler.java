@@ -1,12 +1,17 @@
-package com.custom.proxy.handler.client;
+package com.custom.proxy.handler.inner;
 
+import com.custom.proxy.handler.client.FillProxyHandler;
 import com.custom.proxy.provider.CertificateProvider;
 import io.netty.bootstrap.ServerBootstrap;
-import io.netty.channel.*;
+import io.netty.channel.Channel;
+import io.netty.channel.ChannelInitializer;
+import io.netty.channel.ChannelPipeline;
+import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
-import io.netty.handler.codec.http.*;
+import io.netty.handler.codec.http.HttpObjectAggregator;
+import io.netty.handler.codec.http.HttpServerCodec;
 import io.netty.handler.logging.LogLevel;
 import io.netty.handler.logging.LoggingHandler;
 import io.netty.handler.ssl.SslContext;
@@ -15,17 +20,17 @@ import lombok.extern.slf4j.Slf4j;
 
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
-import javax.net.ssl.SSLException;
 
 @Slf4j
-public class ProxyClientHandler{
-
+public class ProxyInnerHandler {
     public static void start(int localPort, String remoteHost, int remotePort) throws Exception {
-        CertificateProvider.buildSslFile();
 
         EventLoopGroup bossGroup = new NioEventLoopGroup();
         EventLoopGroup workerGroup = new NioEventLoopGroup();
-        Integer maxContentLength = 1024 * 1024 * 10;
+        Integer maxContentLength = 1024 * 1024 * 100;
+
+        // 添加 SSL 处理器，用于解密来自客户端的流量
+        SslContext sslCtx = CertificateProvider.createTargetSslContext("127.0.0.1");
 
         try {
             ServerBootstrap b = new ServerBootstrap();
@@ -36,9 +41,10 @@ public class ProxyClientHandler{
                         @Override
                         protected void initChannel(SocketChannel ch) throws Exception {
                             ChannelPipeline p = ch.pipeline();
+                            ch.pipeline().addFirst(sslCtx.newHandler(ch.alloc()));
                             p.addLast(new HttpServerCodec());
                             p.addLast(new HttpObjectAggregator(maxContentLength));
-                            p.addLast(new FillProxyHandler(remoteHost, remotePort));
+                            p.addLast(new MiddlemanProxyHandler(remoteHost, remotePort));
                         }
                     });
 
@@ -50,5 +56,4 @@ public class ProxyClientHandler{
             workerGroup.shutdownGracefully();
         }
     }
-
 }

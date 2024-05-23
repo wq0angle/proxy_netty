@@ -69,8 +69,7 @@ public class CertificateProvider {
         }
     }
 
-
-    public static SSLContext createTargetSslContext(String host) throws Exception {
+    public static SslContext createTargetSslContext(String host) throws Exception {
         // 获取当前工作目录
         Path currentWorkingDir = Paths.get(System.getProperty("user.dir"));
         Path certPath = currentWorkingDir.resolve("tls").resolve("rootCertificate.crt");
@@ -92,11 +91,12 @@ public class CertificateProvider {
         TrustManagerFactory tmf = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
         tmf.init(keyStore);
 
-        // 创建并初始化 SSLContext
-        SSLContext sslContext = SSLContext.getInstance("TLS");
-        sslContext.init(kmf.getKeyManagers(), tmf.getTrustManagers(), null);
-
-        return sslContext;
+        // 使用SslContextBuilder创建并初始化SSLContext，指定多个协议
+        return SslContextBuilder
+                .forServer(kmf)
+                .protocols("TLSv1.1","TLSv1.2","TLSv1.3")
+                .ciphers(null)  // 默认使用所有可用的加密套件
+                .build();
     }
 
     public static void buildSslFile() {
@@ -169,5 +169,31 @@ public class CertificateProvider {
         return new JcaX509CertificateConverter()
                 .setProvider(new BouncyCastleProvider())
                 .getCertificate(certBuilder.build(contentSigner));
+    }
+
+    public static void trustAllRootCerts() throws Exception {
+        // 获取当前工作目录
+        Path currentWorkingDir = Paths.get(System.getProperty("user.dir"));
+        Path certPath = currentWorkingDir.resolve("tls").resolve("rootCertificate.crt");
+
+        CertificateFactory cf = CertificateFactory.getInstance("X.509");
+        FileInputStream fis = new FileInputStream(String.valueOf(certPath));
+        X509Certificate caCert = (X509Certificate) cf.generateCertificate(fis);
+
+        // Create a KeyStore containing our trusted CAs
+        KeyStore ks = KeyStore.getInstance(KeyStore.getDefaultType());
+        ks.load(null, null);
+        ks.setCertificateEntry("caCert", caCert);
+
+        // Create a TrustManager that trusts the CAs in our KeyStore
+        TrustManagerFactory tmf = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
+        tmf.init(ks);
+
+        // Create an SSLContext that uses our TrustManager
+        SSLContext sslContext = SSLContext.getInstance("TLS");
+        sslContext.init(null, tmf.getTrustManagers(), new java.security.SecureRandom());
+
+        // Set the default SSLContext
+        SSLContext.setDefault(sslContext);
     }
 }

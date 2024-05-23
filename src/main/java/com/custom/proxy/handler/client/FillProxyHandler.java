@@ -39,45 +39,16 @@ public class FillProxyHandler extends SimpleChannelInboundHandler<FullHttpReques
 
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, FullHttpRequest request) throws Exception {
+        // 信任自签名证书
+        CertificateProvider.trustAllRootCerts();
+
         if (request.method() == HttpMethod.CONNECT) {
             log.info("Received CONNECT request: {}", request.uri());
-//            handleConnect(ctx, request);
-            showHandleConnect(ctx, request);
+            handleConnect(ctx, request);
         } else {
             // 直接转发其他请求
             ctx.fireChannelRead(request.retain());
         }
-    }
-
-    private void showHandleConnect(ChannelHandlerContext ctx, FullHttpRequest request) throws Exception {
-        String host = request.uri().substring(0, request.uri().indexOf(":"));
-        int port = Integer.parseInt(request.uri().substring(request.uri().indexOf(":") + 1));
-
-        // 发送 200 OK 响应，表示隧道已建立
-        FullHttpResponse response = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.OK);
-        ctx.writeAndFlush(response);
-
-        // 移除 HTTP 相关的处理器
-        ctx.pipeline().remove(HttpServerCodec.class);
-        ctx.pipeline().remove(HttpObjectAggregator.class);
-
-        // 添加 SSL 处理器，用于解密来自客户端的流量
-        SSLContext sslCtx = CertificateProvider.createTargetSslContext(host);
-        SSLEngine sslEngine = sslCtx.createSSLEngine();
-        sslEngine.setUseClientMode(false); // 设置为服务器模式
-
-        ctx.pipeline().addLast(new SslHandler(sslEngine));
-
-        // 添加 HTTP 编解码器，用于解析解密后的 HTTP 消息
-        int maxContentLength = 1024 * 1024 * 10;
-        ctx.pipeline().addLast(new HttpServerCodec());
-        ctx.pipeline().addLast(new HttpObjectAggregator(maxContentLength));
-
-        // 添加自定义处理器，用于修改解密后的 HTTP 请求
-        ctx.pipeline().addLast(new HttpRequestHandler());
-
-        // 添加用于转发修改后的请求的处理器
-//        ctx.pipeline().addLast(new RelayHandler(ctx.channel()));
     }
 
     private void handleConnect(ChannelHandlerContext ctx, FullHttpRequest request) {
@@ -86,12 +57,14 @@ public class FillProxyHandler extends SimpleChannelInboundHandler<FullHttpReques
         int port = Integer.parseInt(request.uri().substring(request.uri().indexOf(":") + 1));
 
         // 构建新请求转发到服务端 | 隐藏url
+//        FullHttpRequest forwardRequest = new DefaultFullHttpRequest(
+//                request.protocolVersion(), HttpMethod.POST, "/proxy");
         FullHttpRequest forwardRequest = new DefaultFullHttpRequest(
-                request.protocolVersion(), HttpMethod.POST, "/proxy");
+                request.protocolVersion(), request.method(), request.uri());
 
         //connect请求临时改为POST请求,携带host信息到请求头
         forwardRequest.headers().add("X-Target-Url", request.uri());
-        forwardRequest.headers().set("Host", remoteHost);
+//        forwardRequest.headers().set("Host", remoteHost);
         forwardRequest.headers().set("X-Target-Method", request.method().name());
         forwardRequest.content().writeBytes(request.content()); // 添加请求体
 
