@@ -30,8 +30,9 @@ public class ProxyInnerHandler {
         Integer maxContentLength = 1024 * 1024 * 100;
 
         // 添加 SSL 处理器，用于解密来自客户端的流量
-        SslContext sslCtx = CertificateProvider.createTargetSslContext("127.0.0.1");
-
+//        SSLContext sslCtx = CertificateProvider.createTargetSslContext("127.0.0.1");
+//        SSLEngine sslEngine = sslCtx.createSSLEngine();
+//        sslEngine.setUseClientMode(false);
         try {
             ServerBootstrap b = new ServerBootstrap();
             b.group(bossGroup, workerGroup)
@@ -41,7 +42,7 @@ public class ProxyInnerHandler {
                         @Override
                         protected void initChannel(SocketChannel ch) throws Exception {
                             ChannelPipeline p = ch.pipeline();
-                            ch.pipeline().addFirst(sslCtx.newHandler(ch.alloc()));
+//                            ch.pipeline().addFirst(new SslHandler(sslEngine));
                             p.addLast(new HttpServerCodec());
                             p.addLast(new HttpObjectAggregator(maxContentLength));
                             p.addLast(new MiddlemanProxyHandler(remoteHost, remotePort));

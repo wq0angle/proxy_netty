@@ -3,7 +3,9 @@ package com.custom.proxy.handler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.handler.codec.http.*;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 public class HttpRequestHandler extends SimpleChannelInboundHandler<HttpObject> {
 
     @Override
@@ -34,7 +36,7 @@ public class HttpRequestHandler extends SimpleChannelInboundHandler<HttpObject> 
 
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
-        cause.printStackTrace();
+        log.error("An exception occurred: {}", cause.getMessage());
         ctx.close();
     }
 }

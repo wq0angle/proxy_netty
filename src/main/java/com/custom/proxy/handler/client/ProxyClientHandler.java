@@ -9,19 +9,13 @@ import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.handler.codec.http.*;
 import io.netty.handler.logging.LogLevel;
 import io.netty.handler.logging.LoggingHandler;
-import io.netty.handler.ssl.SslContext;
-import io.netty.handler.ssl.SslHandler;
 import lombok.extern.slf4j.Slf4j;
-
-import javax.net.ssl.SSLContext;
-import javax.net.ssl.SSLEngine;
-import javax.net.ssl.SSLException;
 
 @Slf4j
 public class ProxyClientHandler{
 
     public static void start(int localPort, String remoteHost, int remotePort) throws Exception {
-        CertificateProvider.buildSslFile();
+        CertificateProvider.buildRootSslFile();
 
         EventLoopGroup bossGroup = new NioEventLoopGroup();
         EventLoopGroup workerGroup = new NioEventLoopGroup();

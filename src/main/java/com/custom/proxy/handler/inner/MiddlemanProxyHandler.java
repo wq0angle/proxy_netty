@@ -51,9 +51,15 @@ public class MiddlemanProxyHandler extends SimpleChannelInboundHandler<FullHttpR
         ctx.pipeline().remove(HttpObjectAggregator.class);
 
         // 添加 SSL 处理器，用于解密来自客户端的流量
-        SslContext sslCtx = CertificateProvider.createTargetSslContext(host);
-
-        ctx.pipeline().addLast(sslCtx.newHandler(ctx.alloc(), host, port));
+//        SSLContext sslCtx = CertificateProvider.createTargetSslContext(host);
+//        SSLEngine sslEngine = sslCtx.createSSLEngine();
+//        sslEngine.setEnabledProtocols(new String[]{"TLSv1.1", "TLSv1.2", "TLSv1.3"});
+//        sslEngine.setNeedClientAuth(false);
+//        sslEngine.setWantClientAuth(false);
+//        sslEngine.setEnableSessionCreation(false);
+//        sslEngine.setUseClientMode(false);
+//        ctx.pipeline().addLast(new SslHandler(sslEngine));
+        ctx.pipeline().addLast(CertificateProvider.createTargetSslContext(host).newHandler(ctx.alloc()));
 
         // 添加 HTTP 编解码器，用于解析解密后的 HTTP 消息
         int maxContentLength = 1024 * 1024 * 10;

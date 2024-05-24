@@ -1,24 +1,13 @@
 package com.custom.proxy.test;
 
-import com.custom.proxy.provider.CertificateProvider;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.net.ssl.HttpsURLConnection;
-import javax.net.ssl.SSLContext;
-import javax.net.ssl.TrustManagerFactory;
 import java.io.BufferedReader;
-import java.io.FileInputStream;
-import java.io.IOException;
 import java.io.InputStreamReader;
-import java.net.HttpURLConnection;
 import java.net.InetSocketAddress;
 import java.net.Proxy;
 import java.net.URL;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.security.KeyStore;
-import java.security.cert.CertificateFactory;
-import java.security.cert.X509Certificate;
 
 @Slf4j
 public class ProxyReqMain {
@@ -35,6 +24,9 @@ public class ProxyReqMain {
             HttpsURLConnection connection = (HttpsURLConnection) url.openConnection(proxy);
 
             connection.setRequestMethod("GET");
+
+            // 禁用SSL验证
+//            connection.setHostnameVerifier((_, _) -> true);
 
             // 发送请求并获取响应
             BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream()));
