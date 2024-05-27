@@ -24,9 +24,7 @@ public class ProxyReqMain {
             HttpsURLConnection connection = (HttpsURLConnection) url.openConnection(proxy);
 
             connection.setRequestMethod("GET");
-
-            // 禁用SSL验证
-//            connection.setHostnameVerifier((_, _) -> true);
+            connection.setHostnameVerifier((_, _) -> true);
 
             // 发送请求并获取响应
             BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream()));

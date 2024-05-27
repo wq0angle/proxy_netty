@@ -21,6 +21,10 @@
             <id>aliyun</id>
             <url>https://maven.aliyun.com/repository/public</url>
         </repository>
+<!--        <repository>-->
+<!--            <id>netty-incubator</id>-->
+<!--            <url>https://oss.sonatype.org/content/repositories/netty-incubator/</url>-->
+<!--        </repository>-->
     </repositories>
     <dependencies>
 
@@ -53,6 +57,18 @@
             <groupId>io.netty</groupId>
             <artifactId>netty-all</artifactId>
             <version>4.1.99.Final</version>
+        </dependency>
+
+        <dependency>
+            <groupId>io.netty</groupId>
+            <artifactId>netty-transport-native-quic</artifactId>
+            <version>4.1.99.Final</version>
+            <classifier>linux-x86_64</classifier>
+        </dependency>
+        <dependency>
+            <groupId>io.netty</groupId>
+            <artifactId>netty-handler</artifactId>
+            <version>4.1.70.Final</version>
         </dependency>
 
         <dependency>

@@ -8,6 +8,7 @@ import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.handler.codec.http.*;
 import io.netty.handler.logging.LogLevel;
 import io.netty.handler.logging.LoggingHandler;
+import io.netty.handler.ssl.ApplicationProtocolConfig;
 import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslContextBuilder;
 import lombok.extern.slf4j.Slf4j;
@@ -15,18 +16,23 @@ import lombok.extern.slf4j.Slf4j;
 import java.io.IOException;
 
 @Slf4j
-public class FillProxyHandler extends SimpleChannelInboundHandler<FullHttpRequest> {
+public class CdnFillProxyHandler extends SimpleChannelInboundHandler<FullHttpRequest> {
 
     private final String remoteHost;
     private final int remotePort;
     private final SslContext sslContext;
 
-    public FillProxyHandler(String remoteHost, int remotePort) throws Exception {
+    public CdnFillProxyHandler(String remoteHost, int remotePort) throws Exception {
         this.remoteHost = remoteHost;
         this.remotePort = remotePort;
         this.sslContext = SslContextBuilder.forClient()
                 .protocols("TLSv1.1", "TLSv1.2", "TLSv1.3")
                 .ciphers(null)  // 默认使用所有可用的加密套件
+                .applicationProtocolConfig(new ApplicationProtocolConfig(
+                ApplicationProtocolConfig.Protocol.ALPN,
+                ApplicationProtocolConfig.SelectorFailureBehavior.NO_ADVERTISE,
+                ApplicationProtocolConfig.SelectedListenerFailureBehavior.ACCEPT,
+                "h3"))
                 .build();
     }
 
@@ -58,6 +64,10 @@ public class FillProxyHandler extends SimpleChannelInboundHandler<FullHttpReques
         forwardRequest.headers().set("X-Target-Method", request.method().name());
         forwardRequest.content().writeBytes(request.content()); // 添加请求体
 
+//        QuicSslContextBuilder sslCtxBuilder = QuicSslContextBuilder.forClient();
+//        sslCtxBuilder.trustManager(InsecureTrustManagerFactory.INSTANCE);
+//
+//        QuicSslContext sslCtx = sslCtxBuilder.applicationProtocols("h3").build();
         int maxContentLength = 1024 * 1024 * 10;
         // 连接到目标服务器
         Bootstrap b = new Bootstrap();

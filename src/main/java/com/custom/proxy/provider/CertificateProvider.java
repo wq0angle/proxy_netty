@@ -1,6 +1,7 @@
 package com.custom.proxy.provider;
 
 
+import com.custom.proxy.entity.X509CertificateDTO;
 import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslContextBuilder;
 import lombok.Data;
@@ -61,14 +62,15 @@ public class CertificateProvider {
         PrivateKey caPrivateKey = loadPrivateKey(caKeyPath);
 
         // 生成服务器证书
-        X509Certificate cert = buildTargetCertificate(host, caPrivateKey, caCert);
-        KeyPair keyPair = buildKeyPair();
+        X509CertificateDTO certDTO = buildTargetCertificate(host, caPrivateKey, caCert);
+        X509Certificate cert = certDTO.getCertificate();
+        PrivateKey key = certDTO.getPrivateKey();
 
         // 创建 KeyStore 并加载证书和私钥
         KeyStore keyStore = KeyStore.getInstance(KeyStore.getDefaultType());
         keyStore.load(null, null);
         keyStore.setCertificateEntry("cert", cert);
-        keyStore.setKeyEntry("key", keyPair.getPrivate(), new char[0], new java.security.cert.Certificate[]{cert, caCert});
+        keyStore.setKeyEntry("key", key, new char[0], new java.security.cert.Certificate[]{cert, caCert});
 
         // 初始化 KeyManagerFactory 和 TrustManagerFactory
         KeyManagerFactory kmf = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
@@ -132,17 +134,21 @@ public class CertificateProvider {
     }
 
     //生成目标证书
-    public static X509Certificate buildTargetCertificate(String host, PrivateKey caPrivateKey, X509Certificate caCert) throws Exception {
-        X500Name issuer = new X500Name(caCert.getSubjectX500Principal().getName());
+    public static X509CertificateDTO buildTargetCertificate(String host, PrivateKey caPrivateKey, X509Certificate caCert) throws Exception {
+        X509CertificateHolder caCertHolder = new X509CertificateHolder(caCert.getEncoded());
+        X500Name issuer = caCertHolder.getIssuer();  // 从根证书的Subject获取Issuer
         X500Name subject = new X500Name("CN=" + host);
-        BigInteger serial = BigInteger.valueOf(System.currentTimeMillis());
-        Date notBefore = new Date();
-        Date notAfter = new Date(notBefore.getTime() + (365 * 24 * 60 * 60 * 1000L));
+        BigInteger serial = new BigInteger(String.valueOf(System.currentTimeMillis()));
+        Date startDate = new Date(System.currentTimeMillis());
+        Calendar calendar = Calendar.getInstance();
+        calendar.setTime(startDate);
+        calendar.add(Calendar.YEAR, 1);
+        Date endDate = calendar.getTime();
 
         KeyPair keyPair = buildKeyPair();
 
         X509v3CertificateBuilder certBuilder = new JcaX509v3CertificateBuilder(
-                issuer, serial, notBefore, notAfter, subject, keyPair.getPublic()
+                issuer, serial, startDate, endDate, subject, keyPair.getPublic()
         );
 
         ContentSigner signer = new JcaContentSignerBuilder("SHA256WithRSA").setProvider("BC").build(caPrivateKey);
@@ -150,8 +156,11 @@ public class CertificateProvider {
 
         X509Certificate cert = new JcaX509CertificateConverter().setProvider("BC").getCertificate(certHolder);
 
-        // 暂存私钥，用于后续测试
-        targetKey = keyPair.getPrivate();
+        X509CertificateDTO targetCertDTO = X509CertificateDTO
+                .builder()
+                .certificate(cert)
+                .privateKey(keyPair.getPrivate())
+                .build();
 
         // 将目标证书和根证书保存到一个文件中 | 将根证书追加到目标证书形成证书链
         Path currentWorkingDir = Paths.get(System.getProperty("user.dir"));
@@ -162,12 +171,11 @@ public class CertificateProvider {
              JcaPEMWriter keyWriter = new JcaPEMWriter(new FileWriter(keyPath.toFile()))) {
             certWriter.writeObject(cert);
             certWriter.writeObject(caCert);
-            keyWriter.writeObject(targetKey);
+            keyWriter.writeObject(targetCertDTO.getPrivateKey());
         }
-        cert = loadCertificate(certPath);
-        targetKey = loadPrivateKey(keyPath);
-
-        return cert;
+        targetCertDTO.setCertificate(loadCertificate(certPath));
+        targetCertDTO.setPrivateKey(loadPrivateKey(keyPath));
+        return targetCertDTO;
     }
 
     public static X509Certificate buildRootCertificate(KeyPair rootKeyPair) throws Exception {
@@ -202,7 +210,7 @@ public class CertificateProvider {
         // Create a KeyStore containing our trusted CAs
         KeyStore ks = KeyStore.getInstance(KeyStore.getDefaultType());
         ks.load(null, null);
-        ks.setCertificateEntry("caCert", caCert);
+        ks.setCertificateEntry("My Custom Root CA", caCert);
 
         // Create a TrustManager that trusts the CAs in our KeyStore
         TrustManagerFactory tmf = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
@@ -216,8 +224,6 @@ public class CertificateProvider {
         SSLContext.setDefault(sslContext);
     }
 
-    private static PrivateKey targetKey;
-
     public static void main(String[] args) throws Exception {
         buildRootSslFile();
 
@@ -230,14 +236,15 @@ public class CertificateProvider {
 
         trustAllRootCerts();
 
-        X509Certificate targetCertificate = buildTargetCertificate("www.baidu.com", caPrivateKey, caCert);
+        X509CertificateDTO targetCertificateDTO = buildTargetCertificate("www.baidu.com", caPrivateKey, caCert);
+        X509Certificate targetCertificate = targetCertificateDTO.getCertificate();
+        PrivateKey targetKey = targetCertificateDTO.getPrivateKey();
 
         // 验证目标证书的签名是否由根证书签名
         targetCertificate.verify(caCert.getPublicKey());
 
         // 验证私钥是否与目标证书的公钥匹配
         PublicKey publicKey = targetCertificate.getPublicKey();
-        PrivateKey privateKey = targetKey;
 
         byte[] testMessage = "Test message".getBytes();
 
@@ -247,7 +254,7 @@ public class CertificateProvider {
         byte[] encryptedMessage = cipher.doFinal(testMessage);
 
         // 解密
-        cipher.init(Cipher.DECRYPT_MODE, privateKey);
+        cipher.init(Cipher.DECRYPT_MODE, targetKey);
         byte[] decryptedMessage = cipher.doFinal(encryptedMessage);
 
         if (new String(decryptedMessage).equals(new String(testMessage))) {
