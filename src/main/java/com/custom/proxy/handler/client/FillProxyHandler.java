@@ -77,9 +77,6 @@ public class FillProxyHandler extends SimpleChannelInboundHandler<FullHttpReques
         ChannelFuture connectFuture = b.connect(remoteHost, remotePort);
         connectFuture.addListener((ChannelFutureListener) future -> {
             if (future.isSuccess()) {
-                FullHttpResponse response = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.OK);
-                ctx.writeAndFlush(response);
-                ctx.pipeline().addLast(new RelayHandler(future.channel()));  // 添加用于转发的handler
                 //临时添加转发的http解析器，用于转发请求
                 future.channel().pipeline().addLast(new HttpClientCodec());
                 future.channel().pipeline().addLast(new HttpObjectAggregator(maxContentLength));

@@ -5,6 +5,7 @@ import com.custom.proxy.handler.RelayHandler;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.*;
 import io.netty.channel.socket.SocketChannel;
+import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.handler.codec.http.*;
 import io.netty.util.internal.StringUtil;
 import lombok.extern.slf4j.Slf4j;
@@ -31,7 +32,7 @@ public class AnalysisProxyHandler extends SimpleChannelInboundHandler<FullHttpRe
         Integer maxContentLength = 1024 * 1024 * 10;
         Bootstrap b = new Bootstrap();
         b.group(ctx.channel().eventLoop())
-                .channel(ctx.channel().getClass())
+                .channel(NioSocketChannel.class)
                 .handler(new ChannelInitializer<SocketChannel>() {
                     @Override
                     protected void initChannel(SocketChannel ch) {

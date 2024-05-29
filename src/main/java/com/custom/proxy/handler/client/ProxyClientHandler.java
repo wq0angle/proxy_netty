@@ -19,7 +19,7 @@ public class ProxyClientHandler{
 
         EventLoopGroup bossGroup = new NioEventLoopGroup();
         EventLoopGroup workerGroup = new NioEventLoopGroup();
-        Integer maxContentLength = 1024 * 1024 * 10;
+        int maxContentLength = 1024 * 1024 * 10;
 
         try {
             ServerBootstrap b = new ServerBootstrap();
