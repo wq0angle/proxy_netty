@@ -12,7 +12,7 @@ import io.netty.handler.logging.LoggingHandler;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
-public class ProxyClientHandler{
+public class ProxyClientHandler {
 
     public static void start(int localPort, String remoteHost, int remotePort) throws Exception {
         CertificateProvider.buildRootSslFile();
@@ -32,8 +32,8 @@ public class ProxyClientHandler{
                             ChannelPipeline p = ch.pipeline();
                             p.addLast(new HttpServerCodec());
                             p.addLast(new HttpObjectAggregator(maxContentLength));
-                            p.addLast(new FillProxyHandler(remoteHost, remotePort));
-                            p.addLast(new WebSocketFillProxyHandler(remoteHost, remotePort));
+//                            p.addLast(new FillProxyHandler(remoteHost, remotePort));
+                            p.addLast(new FillWebSocketProxyHandler(remoteHost, remotePort));
                         }
                     });
 

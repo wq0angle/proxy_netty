@@ -8,6 +8,7 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.handler.codec.http.FullHttpResponse;
 import io.netty.handler.codec.http.websocketx.TextWebSocketFrame;
+import io.netty.handler.codec.http.websocketx.WebSocketFrame;
 import io.netty.util.ReferenceCountUtil;
 import lombok.extern.slf4j.Slf4j;
 
@@ -21,24 +22,26 @@ public class RelayWebSocketHandler extends ChannelInboundHandlerAdapter {
         this.relayChannel = relayChannel;
     }
 
-    @Override
-    public void channelRead(ChannelHandlerContext ctx, Object msg) {
-        if (relayChannel.isActive()) {
-            if (msg instanceof FullHttpResponse response) {
-                // 将HTTP响应内容转发为WebSocket文本帧
-                TextWebSocketFrame frame = new TextWebSocketFrame(response.content().retain());
-                relayChannel.writeAndFlush(frame).addListener(ChannelFutureListener.CLOSE_ON_FAILURE);
-            } else if (msg instanceof ByteBuf buf) {
-                // 如果msg是ByteBuf类型，直接写入到relayChannel中
-                relayChannel.writeAndFlush((buf).retain()).addListener(ChannelFutureListener.CLOSE_ON_FAILURE);
-            } else {
-                // 处理其他可能的消息类型
-                relayChannel.writeAndFlush(msg).addListener(ChannelFutureListener.CLOSE_ON_FAILURE);
-            }
+   @Override
+public void channelRead(ChannelHandlerContext ctx, Object msg) {
+    if (relayChannel.isActive()) {
+        if (msg instanceof FullHttpResponse response) {
+            TextWebSocketFrame frame = new TextWebSocketFrame(response.content().retain());
+            relayChannel.writeAndFlush(frame).addListener(ChannelFutureListener.CLOSE_ON_FAILURE);
+        } else if (msg instanceof ByteBuf buf) {
+            relayChannel.writeAndFlush(buf.retain()).addListener(ChannelFutureListener.CLOSE_ON_FAILURE);
+        } else if (msg instanceof WebSocketFrame webSocketFrame) {
+            relayChannel.writeAndFlush(webSocketFrame).addListener(ChannelFutureListener.CLOSE_ON_FAILURE);
         } else {
+            log.warn("Unexpected message type: {}", msg.getClass().getName());
+            // 释放资源，避免内存泄漏
             ReferenceCountUtil.release(msg);
         }
+    } else {
+        ReferenceCountUtil.release(msg);
     }
+}
+
 
     @Override
     public void channelInactive(ChannelHandlerContext ctx) {

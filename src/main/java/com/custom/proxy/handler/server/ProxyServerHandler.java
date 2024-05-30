@@ -1,15 +1,11 @@
 package com.custom.proxy.handler.server;
 
-import com.custom.proxy.provider.SslContextProvider;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.handler.codec.http.*;
 import io.netty.handler.codec.http.websocketx.WebSocketServerProtocolHandler;
-import io.netty.handler.logging.LogLevel;
-import io.netty.handler.logging.LoggingHandler;
-import io.netty.handler.ssl.SslContext;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.EnableAsync;
@@ -41,7 +37,7 @@ public class ProxyServerHandler{
                             p.addLast(new HttpServerCodec());
                             p.addLast(new HttpObjectAggregator(maxContentLength));
                             p.addLast(new WebSocketServerProtocolHandler("/websocket"));
-                            p.addLast(new WebSocketAnalysisProxyHandler());
+                            p.addLast(new AnalysisWebSocketProxyHandler());
 //                            p.addLast(new AnalysisProxyHandler());
                         }
                     });

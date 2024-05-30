@@ -1,7 +1,6 @@
 package com.custom.proxy.handler.server;
 
 import com.custom.proxy.entity.TargetConnectDTO;
-import com.custom.proxy.handler.RelayHandler;
 import com.custom.proxy.handler.RelayWebSocketHandler;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.*;
@@ -13,8 +12,8 @@ import io.netty.util.internal.StringUtil;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
-public class WebSocketAnalysisProxyHandler extends SimpleChannelInboundHandler<Object> {
-
+public class AnalysisWebSocketProxyHandler extends SimpleChannelInboundHandler<Object> {
+    private WebSocketClientHandshaker handshake;
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, Object msg) {
         if (msg instanceof FullHttpRequest request) {
@@ -65,9 +64,9 @@ public class WebSocketAnalysisProxyHandler extends SimpleChannelInboundHandler<O
                     FullHttpResponse response = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.OK);
                     ctx.writeAndFlush(response);
                     // 移除HTTP处理器并设置透明转发
-                    ctx.pipeline().remove(HttpServerCodec.class);
-                    ctx.pipeline().remove(HttpObjectAggregator.class);
-                    ctx.pipeline().remove(this.getClass());  // 移除当前处理器
+//                    ctx.pipeline().remove(HttpServerCodec.class);
+//                    ctx.pipeline().remove(HttpObjectAggregator.class);
+//                    ctx.pipeline().remove(this.getClass());  // 移除当前处理器
                     ctx.pipeline().addLast(new RelayWebSocketHandler(future.channel()));  // 添加用于转发的handler
                 }else {
                     log.info("request body to target server");

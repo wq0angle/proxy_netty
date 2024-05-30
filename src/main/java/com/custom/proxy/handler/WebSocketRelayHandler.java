@@ -24,7 +24,14 @@ public class WebSocketRelayHandler extends SimpleChannelInboundHandler<WebSocket
 
     @Override
     public void channelActive(ChannelHandlerContext ctx) {
-        handshake.handshake(ctx.channel());
+        // 发送 WebSocket 握手请求
+        handshake.handshake(ctx.channel()).addListener(future -> {
+            if (future.isSuccess()) {
+                log.info("Handshake sent successfully");
+            } else {
+                log.error("Handshake failed", future.cause());
+            }
+        });
     }
 
     @Override
@@ -36,11 +43,15 @@ public class WebSocketRelayHandler extends SimpleChannelInboundHandler<WebSocket
     @Override
     public void channelRead0(ChannelHandlerContext ctx, WebSocketFrame frame) throws Exception {
         if (!handshake.isHandshakeComplete()) {
-            handshake.finishHandshake(ctx.channel(), (FullHttpResponse) frame);
-            handshakeFuture.setSuccess();
-            return;
+            if (frame instanceof FullHttpResponse) {
+                // 处理握手响应
+                handshake.finishHandshake(ctx.channel(), (FullHttpResponse) frame);
+                handshakeFuture.setSuccess();
+                return;
+            }
         }
 
+        // 处理其他 WebSocket 帧
         if (frame instanceof TextWebSocketFrame || frame instanceof BinaryWebSocketFrame) {
             inboundChannel.writeAndFlush(frame.retain());
         } else if (frame instanceof PongWebSocketFrame) {

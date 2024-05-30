@@ -1,12 +1,14 @@
 package com.custom.proxy.handler.client;
 
-import com.custom.proxy.handler.RelayHandler;
 import com.custom.proxy.handler.WebSocketRelayHandler;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.*;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.handler.codec.http.*;
+import io.netty.handler.codec.http.websocketx.extensions.compression.WebSocketClientCompressionHandler;
+import io.netty.handler.logging.LogLevel;
+import io.netty.handler.logging.LoggingHandler;
 import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslContextBuilder;
 import io.netty.handler.codec.http.websocketx.WebSocketClientProtocolHandler;
@@ -19,13 +21,13 @@ import java.io.IOException;
 import java.net.URI;
 
 @Slf4j
-public class WebSocketFillProxyHandler extends SimpleChannelInboundHandler<FullHttpRequest> {
+public class FillWebSocketProxyHandler extends SimpleChannelInboundHandler<FullHttpRequest> {
 
     private final String remoteHost;
     private final int remotePort;
     private final SslContext sslContext;
 
-    public WebSocketFillProxyHandler(String remoteHost, int remotePort) throws Exception {
+    public FillWebSocketProxyHandler(String remoteHost, int remotePort) throws Exception {
         this.remoteHost = remoteHost;
         this.remotePort = remotePort;
         this.sslContext = SslContextBuilder.forClient()
@@ -66,7 +68,9 @@ public class WebSocketFillProxyHandler extends SimpleChannelInboundHandler<FullH
                         @Override
                         protected void initChannel(SocketChannel ch) throws Exception {
 //                            ch.pipeline().addLast(sslContext.newHandler(ch.alloc(), remoteHost, remotePort));
-                            ch.pipeline().addLast(new WebSocketClientProtocolHandler(handshake));
+                            ch.pipeline().addLast(new HttpClientCodec());
+                            ch.pipeline().addLast(new HttpObjectAggregator(65536));
+//                            ch.pipeline().addLast(new WebSocketClientProtocolHandler(handshake));
                             ch.pipeline().addLast(new WebSocketRelayHandler(ctx.channel(), handshake));
                         }
                     });
@@ -77,14 +81,16 @@ public class WebSocketFillProxyHandler extends SimpleChannelInboundHandler<FullH
                     //发送修改的请求
                     future.channel().writeAndFlush(forwardRequest);
                     //释放临时添加转发的http解析器
-//                    future.channel().pipeline().remove(WebSocketClientProtocolHandler.class);
-                    future.channel().pipeline().addLast(new WebSocketClientProtocolHandler(handshake));
+                    future.channel().pipeline().remove(WebSocketRelayHandler.class);
+//                    future.channel().pipeline().remove(HttpClientCodec.class);
+//                    future.channel().pipeline().remove(HttpObjectAggregator.class);
+//                    future.channel().pipeline().addLast(new WebSocketClientProtocolHandler(handshake));
                     future.channel().pipeline().addLast(new WebSocketRelayHandler(future.channel(), handshake));
                     //释放该请求的全局监听的http解析器,透明转发请求,在connect后面的请求彻底转换为SSL隧道的TCP通信模式
-                    ctx.pipeline().remove(HttpServerCodec.class);
-                    ctx.pipeline().remove(HttpObjectAggregator.class);
-                    ctx.pipeline().remove(this.getClass());  // 移除当前处理器
-                    ctx.pipeline().addLast(new WebSocketClientProtocolHandler(handshake));
+//                    ctx.pipeline().remove(HttpServerCodec.class);
+//                    ctx.pipeline().remove(HttpObjectAggregator.class);
+//                    ctx.pipeline().remove(this.getClass());  // 移除当前处理器
+//                    ctx.pipeline().addLast(new WebSocketClientProtocolHandler(handshake));
                     ctx.pipeline().addLast(new WebSocketRelayHandler(future.channel(), handshake));
                     log.info("send connect request to post");
                 } else {
