@@ -68,8 +68,9 @@ public class FillProxyHandler extends SimpleChannelInboundHandler<FullHttpReques
                     protected void initChannel(SocketChannel ch) throws Exception {
                         // 仅添加用于转发的handler
 //                        ch.pipeline().addLast(sslContext.newHandler(ch.alloc(), host, remotePort)); // 添加 SSL 处理器
-                        ch.pipeline().addLast();
                         ch.pipeline().addLast(new LoggingHandler(LogLevel.INFO)); // 添加日志处理器，输出 SSL 握手过程中的详细信息
+                        ch.pipeline().addLast(new HttpClientCodec());
+                        ch.pipeline().addLast(new HttpObjectAggregator(maxContentLength));
                         ch.pipeline().addLast(new RelayHandler(ctx.channel()));
                     }
                 });
@@ -77,9 +78,6 @@ public class FillProxyHandler extends SimpleChannelInboundHandler<FullHttpReques
         ChannelFuture connectFuture = b.connect(remoteHost, remotePort);
         connectFuture.addListener((ChannelFutureListener) future -> {
             if (future.isSuccess()) {
-                //临时添加转发的http解析器，用于转发请求
-                future.channel().pipeline().addLast(new HttpClientCodec());
-                future.channel().pipeline().addLast(new HttpObjectAggregator(maxContentLength));
                 //发送修改的请求
                 future.channel().writeAndFlush(forwardRequest);
                 //释放临时添加转发的http解析器

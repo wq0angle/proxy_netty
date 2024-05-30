@@ -33,6 +33,7 @@ public class ProxyClientHandler{
                             p.addLast(new HttpServerCodec());
                             p.addLast(new HttpObjectAggregator(maxContentLength));
                             p.addLast(new FillProxyHandler(remoteHost, remotePort));
+                            p.addLast(new WebSocketFillProxyHandler(remoteHost, remotePort));
                         }
                     });
 

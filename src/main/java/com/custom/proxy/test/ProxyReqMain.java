@@ -15,7 +15,7 @@ public class ProxyReqMain {
     public static void main(String[] args) {
         String targetUrl = "https://fanyi.baidu.com/";
         String proxyHost = "127.0.0.1";
-        int proxyPort = 6666;
+        int proxyPort = 8888;
 
         try {
             URL url = new URL(targetUrl);

@@ -9,7 +9,7 @@ public class ServerMain {
         // 设置http静态网站的代理IP、端口号和静态网站目录
         String ipAddress = "127.0.0.1";
         int port = 5088;
-        String websiteDirectory = "C:\\Users\\86177\\Desktop\\blog";
+        String websiteDirectory = "C:\\Users\\wq0angle\\Desktop\\blog";
         new WebsiteServerHandler().start(ipAddress, port, websiteDirectory);
 
         int remotePort = 6088;
