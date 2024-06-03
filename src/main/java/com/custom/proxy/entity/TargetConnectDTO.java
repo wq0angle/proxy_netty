@@ -8,4 +8,6 @@ public class TargetConnectDTO {
     private String host;
 
     private Integer port;
+
+    private Integer proxyType;
 }

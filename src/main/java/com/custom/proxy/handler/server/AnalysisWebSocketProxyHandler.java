@@ -11,9 +11,10 @@ import io.netty.handler.codec.http.websocketx.*;
 import io.netty.util.internal.StringUtil;
 import lombok.extern.slf4j.Slf4j;
 
+import java.io.IOException;
+
 @Slf4j
 public class AnalysisWebSocketProxyHandler extends SimpleChannelInboundHandler<Object> {
-    private WebSocketClientHandshaker handshake;
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, Object msg) {
         if (msg instanceof FullHttpRequest request) {
@@ -24,7 +25,11 @@ public class AnalysisWebSocketProxyHandler extends SimpleChannelInboundHandler<O
                 targetConnect.setHost(urlArr[0]);
                 targetConnect.setPort(urlArr.length < 2 ? 80 : Integer.parseInt(urlArr[1]));
                 handleConnectRequest(ctx, request, targetConnect.getHost(), targetConnect.getPort());
-            } else {
+            }
+            else if ("websocket".equalsIgnoreCase(request.headers().get(HttpHeaderNames.UPGRADE))) {
+                handleWebSocketHandshake(ctx, request);
+            }
+            else {
                 forwardRequest(request, targetConnect);
                 handleHttpRequest(ctx, request, targetConnect.getHost(), targetConnect.getPort());
             }
@@ -64,9 +69,9 @@ public class AnalysisWebSocketProxyHandler extends SimpleChannelInboundHandler<O
                     FullHttpResponse response = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.OK);
                     ctx.writeAndFlush(response);
                     // 移除HTTP处理器并设置透明转发
-//                    ctx.pipeline().remove(HttpServerCodec.class);
-//                    ctx.pipeline().remove(HttpObjectAggregator.class);
-//                    ctx.pipeline().remove(this.getClass());  // 移除当前处理器
+                    removeCheckHttpHandler(ctx, HttpServerCodec.class);
+                    removeCheckHttpHandler(ctx, HttpObjectAggregator.class);
+                    removeCheckHttpHandler(ctx, this.getClass());  // 移除当前处理器
                     ctx.pipeline().addLast(new RelayWebSocketHandler(future.channel()));  // 添加用于转发的handler
                 }else {
                     log.info("request body to target server");
@@ -102,6 +107,8 @@ public class AnalysisWebSocketProxyHandler extends SimpleChannelInboundHandler<O
         }
     }
 
+
+
     private void forwardRequest(FullHttpRequest request, TargetConnectDTO targetConnect) {
         String host;
         int port;
@@ -114,6 +121,7 @@ public class AnalysisWebSocketProxyHandler extends SimpleChannelInboundHandler<O
             request.setMethod(HttpMethod.valueOf(methodName));
             request.setUri(targetUrl);
             request.headers().set("Host", host);
+            targetConnect.setProxyType(1);
         } else {
             // 不带X-Target-Host头部的请求，返回指定目录的HTML内容 | 一般为get或者post请求,url为地址后面路径
             host = "127.0.0.1";
@@ -123,8 +131,49 @@ public class AnalysisWebSocketProxyHandler extends SimpleChannelInboundHandler<O
             }
             // 修改请求的目标地址为本地HTTP代理的地址和端口
             request.setUri("http://" + host + ":" + port + request.uri());
+            targetConnect.setProxyType(0);
         }
         targetConnect.setHost(host);
         targetConnect.setPort(port);
+    }
+
+    private void handleWebSocketHandshake(ChannelHandlerContext ctx, FullHttpRequest req) {
+        WebSocketServerHandshakerFactory wsFactory = new WebSocketServerHandshakerFactory(
+                getWebSocketLocation(req), null, true);
+        WebSocketServerHandshaker handshaker = wsFactory.newHandshaker(req);
+        if (handshaker == null) {
+            WebSocketServerHandshakerFactory.sendUnsupportedVersionResponse(ctx.channel());
+        } else {
+            handshaker.handshake(ctx.channel(), req).addListener(future -> {
+                if (future.isSuccess()) {
+                    log.info("WebSocket Handshake successful.");
+                } else {
+                    log.error("WebSocket Handshake failed.", future.cause());
+                    ctx.close();
+                }
+            });
+        }
+    }
+
+    private static String getWebSocketLocation(FullHttpRequest req) {
+        String location = req.headers().get(HttpHeaderNames.HOST) + req.uri();
+        return "ws://" + location;
+    }
+
+    private void removeCheckHttpHandler(ChannelHandlerContext ctx, Class<? extends ChannelHandler> clazz) {
+        if (ctx.pipeline().get(clazz) != null){
+            log.debug("remove check http handler");
+            ctx.pipeline().remove(clazz);
+        }
+    }
+
+    @Override
+    public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
+        if (cause instanceof IOException && cause.getMessage().contains("Connection reset")) {
+            log.info("Connection was reset by the peer");
+        } else {
+            log.error("Error occurred in AnalysisWebSocketProxyHandler", cause);
+        }
+        ctx.close();
     }
 }
