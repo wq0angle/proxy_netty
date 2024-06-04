@@ -34,6 +34,7 @@ public class AnalysisWebSocketProxyHandler extends SimpleChannelInboundHandler<O
                 handleHttpRequest(ctx, request, targetConnect.getHost(), targetConnect.getPort());
             }
         } else if (msg instanceof WebSocketFrame) {
+            log.info("WebSocket Frame: {}", msg);
             handleWebSocketFrame(ctx, (WebSocketFrame) msg);
         }
     }

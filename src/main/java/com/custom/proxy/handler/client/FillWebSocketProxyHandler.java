@@ -19,6 +19,7 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
 import java.net.URI;
+import java.net.URISyntaxException;
 
 @Slf4j
 public class FillWebSocketProxyHandler extends SimpleChannelInboundHandler<FullHttpRequest> {
@@ -61,6 +62,7 @@ public class FillWebSocketProxyHandler extends SimpleChannelInboundHandler<FullH
             Bootstrap b = new Bootstrap();
             b.group(ctx.channel().eventLoop())
                     .channel(NioSocketChannel.class)
+                    .handler(new LoggingHandler("WebSocketClient", LogLevel.INFO))
                     .handler(new ChannelInitializer<SocketChannel>() {
                         @Override
                         protected void initChannel(SocketChannel ch) throws Exception {
@@ -76,9 +78,9 @@ public class FillWebSocketProxyHandler extends SimpleChannelInboundHandler<FullH
                                             log.info("WebSocket Handshake completed successfully");
 
                                             // 移除HTTP处理器，并添加WebSocket帧处理器
-                                            removeCheckHttpHandler(ctx.pipeline(), HttpClientCodec.class);
-                                            removeCheckHttpHandler(ctx.pipeline(), HttpObjectAggregator.class);
-                                            ctx.pipeline().addLast(new WebSocketRelayHandler(ctx.channel()));
+//                                            removeCheckHttpHandler(ctx.pipeline(), HttpClientCodec.class);
+//                                            removeCheckHttpHandler(ctx.pipeline(), HttpObjectAggregator.class);
+//                                            ctx.pipeline().addLast(new WebSocketRelayHandler(ctx.channel()));
 
                                         } catch (WebSocketHandshakeException e) {
                                             log.error("WebSocket Handshake failed", e);
@@ -110,16 +112,18 @@ public class FillWebSocketProxyHandler extends SimpleChannelInboundHandler<FullH
                         }else {
                             log.info("send connect to server");
                             // 发送CONNECT请求到代理服务端
-                            WebSocketFrame frame = new TextWebSocketFrame(JSON.toJSONString(forwardRequest.content()));
+                            WebSocketFrame frame = new TextWebSocketFrame(JSON.toJSONString(forwardRequest));
                             future.channel().writeAndFlush(frame);
+//                            FullHttpResponse response = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.OK);
+//                            ctx.writeAndFlush(response);
                             // 立即移除HTTP处理器，并添加WebSocket帧处理器
-                            removeCheckHttpHandler(future.channel().pipeline(), HttpServerCodec.class);
-                            removeCheckHttpHandler(future.channel().pipeline(), HttpObjectAggregator.class);
+//                            removeCheckHttpHandler(future.channel().pipeline(), HttpServerCodec.class);
+//                            removeCheckHttpHandler(future.channel().pipeline(), HttpObjectAggregator.class);
                             future.channel().pipeline().addLast(new WebSocketRelayHandler(future.channel()));
-                            removeCheckHttpHandler(ctx.pipeline(), HttpClientCodec.class);
-                            removeCheckHttpHandler(ctx.pipeline(), this.getClass());
-                            removeCheckHttpHandler(ctx.pipeline(), HttpObjectAggregator.class);
-                            ctx.pipeline().addLast(new WebSocketRelayHandler(ctx.channel()));
+//                            removeCheckHttpHandler(ctx.pipeline(), HttpClientCodec.class);
+//                            removeCheckHttpHandler(ctx.pipeline(), this.getClass());
+//                            removeCheckHttpHandler(ctx.pipeline(), HttpObjectAggregator.class);
+                            ctx.pipeline().addLast(new WebSocketRelayHandler(future.channel()));
                         }
                     });
 
