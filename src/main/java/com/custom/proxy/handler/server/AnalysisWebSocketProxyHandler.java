@@ -12,6 +12,7 @@ import io.netty.util.internal.StringUtil;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
+import java.time.LocalDate;
 
 @Slf4j
 public class AnalysisWebSocketProxyHandler extends SimpleChannelInboundHandler<Object> {
@@ -139,21 +140,21 @@ public class AnalysisWebSocketProxyHandler extends SimpleChannelInboundHandler<O
     }
 
     private void handleWebSocketHandshake(ChannelHandlerContext ctx, FullHttpRequest req) {
-        WebSocketServerHandshakerFactory wsFactory = new WebSocketServerHandshakerFactory(
-                getWebSocketLocation(req), null, true);
-        WebSocketServerHandshaker handshaker = wsFactory.newHandshaker(req);
-        if (handshaker == null) {
-            WebSocketServerHandshakerFactory.sendUnsupportedVersionResponse(ctx.channel());
-        } else {
-            handshaker.handshake(ctx.channel(), req).addListener(future -> {
-                if (future.isSuccess()) {
-                    log.info("WebSocket Handshake successful.");
-                } else {
-                    log.error("WebSocket Handshake failed.", future.cause());
-                    ctx.close();
-                }
-            });
-        }
+//        WebSocketServerHandshakerFactory wsFactory = new WebSocketServerHandshakerFactory(
+//                getWebSocketLocation(req), null, false);
+//        WebSocketServerHandshaker handshaker = wsFactory.newHandshaker(req);
+//        if (handshaker == null) {
+//            WebSocketServerHandshakerFactory.sendUnsupportedVersionResponse(ctx.channel());
+//        } else {
+//            handshaker.handshake(ctx.channel(), req).addListener(future -> {
+//                if (future.isSuccess()) {
+//                    log.info("WebSocket Handshake successful.");
+//                } else {
+//                    log.error("WebSocket Handshake failed.", future.cause());
+//                    ctx.close();
+//                }
+//            });
+//        }
     }
 
     private static String getWebSocketLocation(FullHttpRequest req) {
@@ -168,6 +169,22 @@ public class AnalysisWebSocketProxyHandler extends SimpleChannelInboundHandler<O
         }
     }
 
+    /**
+     *  连接成功， 此时通道是活跃的时候触发
+     *  @param ctx
+     */
+    @Override
+    public void channelActive(ChannelHandlerContext ctx) {
+        LocalDate today = LocalDate.now();
+        String dateStr = today.toString(); // 默认格式为 "yyyy-MM-dd"
+        ctx.writeAndFlush("welcome to server-- now :" + dateStr + "\r\n");
+    }
+
+    /**
+     * 异常处理
+     * @param ctx
+     * @param cause
+     */
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
         if (cause instanceof IOException && cause.getMessage().contains("Connection reset")) {
@@ -176,5 +193,38 @@ public class AnalysisWebSocketProxyHandler extends SimpleChannelInboundHandler<O
             log.error("Error occurred in AnalysisWebSocketProxyHandler", cause);
         }
         ctx.close();
+    }
+
+    /**
+     *  通道不活跃 ，用于处理用户下线的逻辑
+     * @param ctx
+     */
+    @Override
+    public void channelInactive(ChannelHandlerContext ctx) {
+        if (ctx.channel().isActive()) {
+            log.info("server ip : [{}] disconnected", ctx.channel().remoteAddress());
+            ctx.close();
+        }
+    }
+
+    /**
+     *
+     * @param ctx 通道处理器上下文
+     * 连接刚刚建立时 ，第一个被执行的方法，
+     */
+    @Override
+    public void handlerAdded(ChannelHandlerContext ctx) {
+        log.info("handlerAdded | server ip : [{}] connected", ctx.channel().remoteAddress());
+    }
+
+    /**
+     *
+     * @param ctx  通道处理器上下文
+     * 当连接断开 最后执行的方法
+     * 连接断开时 ， channel 会自动从 通道组中移除
+     */
+    @Override
+    public void handlerRemoved(ChannelHandlerContext ctx) {
+        log.info("handlerRemoved | server ip : [{}] disconnected", ctx.channel().remoteAddress());
     }
 }
