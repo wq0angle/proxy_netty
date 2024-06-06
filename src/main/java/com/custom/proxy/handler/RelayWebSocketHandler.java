@@ -32,6 +32,8 @@ public class RelayWebSocketHandler extends ChannelInboundHandlerAdapter {
                     TextWebSocketFrame frame = new TextWebSocketFrame(response.content().retain());
                     relayChannel.writeAndFlush(frame).addListener(ChannelFutureListener.CLOSE_ON_FAILURE);
                 }
+
+
                 case ByteBuf buf -> {
                     log.info("reader message type: ByteBuf");
                     relayChannel.writeAndFlush(buf.retain()).addListener(ChannelFutureListener.CLOSE_ON_FAILURE);
