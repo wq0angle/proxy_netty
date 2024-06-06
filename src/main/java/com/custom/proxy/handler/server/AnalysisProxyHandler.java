@@ -3,10 +3,13 @@ package com.custom.proxy.handler.server;
 import com.custom.proxy.entity.TargetConnectDTO;
 import com.custom.proxy.handler.RelayHandler;
 import io.netty.bootstrap.Bootstrap;
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
 import io.netty.channel.*;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.handler.codec.http.*;
+import io.netty.util.CharsetUtil;
 import io.netty.util.internal.StringUtil;
 import lombok.extern.slf4j.Slf4j;
 
@@ -52,6 +55,8 @@ public class AnalysisProxyHandler extends SimpleChannelInboundHandler<FullHttpRe
                 if (request.method() == HttpMethod.CONNECT) {
                     log.info("Connected to target server");
                     FullHttpResponse response = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.OK);
+                    response.headers().set("test", "text/plain; charset=UTF-8");
+
                     ctx.writeAndFlush(response);
                     // 移除HTTP处理器并设置透明转发
                     ctx.pipeline().remove(HttpServerCodec.class);

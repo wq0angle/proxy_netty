@@ -1,6 +1,7 @@
 package com.custom.proxy.handler.client;
 
 import com.alibaba.fastjson.JSON;
+import com.custom.proxy.entity.TargetConnectDTO;
 import com.custom.proxy.handler.RelayHandler;
 import com.custom.proxy.handler.WebSocketRelayHandler;
 import com.custom.proxy.util.WebSocketUtil;
@@ -45,31 +46,27 @@ public class FillWebSocketProxyHandler extends SimpleChannelInboundHandler<FullH
 
     private void handleConnect(ChannelHandlerContext ctx, FullHttpRequest request) {
         try {
-            URI uri = new URI("ws://" + remoteHost + ":" + remotePort);
-
+            URI uri = new URI("ws://" + remoteHost + ":" + remotePort + "/websocket");
             // 创建包含额外头部参数的HttpHeaders对象
-            FullHttpRequest forwardRequest = new DefaultFullHttpRequest(
-                    request.protocolVersion(), request.method(), request.uri());
-            forwardRequest.headers().set(request.headers());
-            forwardRequest.content().writeBytes(request.content());
 
             //注意这里的false，因为我们不希望WebSocketRelayHandler处理HTTP响应
-            WebSocketRelayHandler handshaker = new WebSocketRelayHandler(WebSocketClientHandshakerFactory
-                    .newHandshaker(uri, WebSocketVersion.V13, null, false, new DefaultHttpHeaders()));
+            WebSocketClientHandshaker handshaker = WebSocketClientHandshakerFactory
+                    .newHandshaker(uri, WebSocketVersion.V13, null, false, new DefaultHttpHeaders());
 
+            WebSocketRelayHandler webSocketRelayHandler = new WebSocketRelayHandler(handshaker, ctx.channel());
 
             Integer maxContentLength = 1024 * 1024 * 10;
             Bootstrap b = new Bootstrap();
             b.group(ctx.channel().eventLoop())
                     .channel(NioSocketChannel.class)
-                    .handler(new LoggingHandler("WebSocketClient", LogLevel.INFO))
                     .handler(new ChannelInitializer<SocketChannel>() {
                         @Override
                         protected void initChannel(SocketChannel ch) throws Exception {
+                            ch.pipeline().addLast(new LoggingHandler(LogLevel.INFO));
                             ch.pipeline().addLast(new HttpClientCodec());
                             ch.pipeline().addLast(new HttpObjectAggregator(maxContentLength));
-//                            handshaker.setInboundChannel(ch);
-//                            ch.pipeline().addLast(handshaker);
+
+                            ch.pipeline().addLast(webSocketRelayHandler);
                         }
                     });
 
@@ -78,23 +75,29 @@ public class FillWebSocketProxyHandler extends SimpleChannelInboundHandler<FullH
                 if (future.isSuccess()) {
                     log.info("WebSocket connection established");
                     // 发送WebSocket握手请求
-                    handshaker.handshakeFuture().addListener(handshakeFuture -> {
+                    webSocketRelayHandler.handshakeFuture().addListener(handshakeFuture -> {
                         if (!handshakeFuture.isSuccess()) {
                             log.error("WebSocket Handshake initiation failed", handshakeFuture.cause());
                             ctx.close();
                         }else {
                             log.info("send connect to server");
+
                             // 发送CONNECT请求到代理服务端
-                            WebSocketFrame frame = new TextWebSocketFrame(JSON.toJSONString(forwardRequest));
+                            WebSocketFrame frame = new TextWebSocketFrame(request.uri());
                             future.channel().writeAndFlush(frame);
-                            // 立即移除HTTP处理器，并添加WebSocket帧处理器
-//                            removeCheckHttpHandler(future.channel().pipeline(), HttpServerCodec.class);
-//                            removeCheckHttpHandler(future.channel().pipeline(), HttpObjectAggregator.class);
-//                            future.channel().pipeline().addLast(new WebSocketRelayHandler(future.channel()));
-//                            removeCheckHttpHandler(ctx.pipeline(), HttpClientCodec.class);
-//                            removeCheckHttpHandler(ctx.pipeline(), this.getClass());
-//                            removeCheckHttpHandler(ctx.pipeline(), HttpObjectAggregator.class);
-//                            ctx.pipeline().addLast(new WebSocketRelayHandler(future.channel()));
+
+                            // 立即移除HTTP处理器
+                            removeCheckHttpHandler(future.channel().pipeline(), HttpServerCodec.class);
+                            removeCheckHttpHandler(future.channel().pipeline(), HttpObjectAggregator.class);
+                            future.channel().pipeline().addLast(new WebSocketRelayHandler(handshaker, future.channel()));
+//                            future.channel().pipeline().addLast(new RelayHandler(future.channel()));
+
+
+                            removeCheckHttpHandler(ctx.pipeline(), HttpClientCodec.class);
+                            removeCheckHttpHandler(ctx.pipeline(), this.getClass());
+                            removeCheckHttpHandler(ctx.pipeline(), HttpObjectAggregator.class);
+                            ctx.channel().pipeline().addLast(new WebSocketRelayHandler(handshaker, future.channel()));
+//                            ctx.channel().pipeline().addLast(new RelayHandler(future.channel()));
                         }
                     });
 

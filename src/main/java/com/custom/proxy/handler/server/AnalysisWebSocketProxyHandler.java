@@ -1,6 +1,7 @@
 package com.custom.proxy.handler.server;
 
 import com.custom.proxy.entity.TargetConnectDTO;
+import com.custom.proxy.handler.RelayHandler;
 import com.custom.proxy.handler.RelayWebSocketHandler;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.*;
@@ -68,13 +69,15 @@ public class AnalysisWebSocketProxyHandler extends SimpleChannelInboundHandler<O
             if (future.isSuccess()) {
                 if (request.method() == HttpMethod.CONNECT) {
                     log.info("Connected to target server");
-                    FullHttpResponse response = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.OK);
-                    ctx.writeAndFlush(response);
+                    WebSocketFrame frame = new TextWebSocketFrame("connect ok");
+                    ctx.writeAndFlush(frame);
+
                     // 移除HTTP处理器并设置透明转发
                     removeCheckHttpHandler(ctx, HttpServerCodec.class);
                     removeCheckHttpHandler(ctx, HttpObjectAggregator.class);
                     removeCheckHttpHandler(ctx, this.getClass());  // 移除当前处理器
-                    ctx.pipeline().addLast(new RelayWebSocketHandler(future.channel()));  // 添加用于转发的handler
+//                    ctx.pipeline().addLast(new RelayWebSocketHandler(future.channel()));  // 添加用于转发的handler
+                    ctx.pipeline().addLast(new RelayHandler(future.channel()));  // 添加用于转发的handler
                 }else {
                     log.info("request body to target server");
                     // 构建新请求转发到服务端
@@ -94,9 +97,9 @@ public class AnalysisWebSocketProxyHandler extends SimpleChannelInboundHandler<O
     private void handleWebSocketFrame(ChannelHandlerContext ctx, WebSocketFrame frame) {
         if (frame instanceof TextWebSocketFrame || frame instanceof BinaryWebSocketFrame) {
             // 处理WebSocket消息并转发到目标HTTP服务器
-            String targetUrl = ((TextWebSocketFrame) frame).text();
+            String reqStr = ((TextWebSocketFrame) frame).text();
             // 假设目标URL在WebSocket消息中
-            FullHttpRequest request = new DefaultFullHttpRequest(HttpVersion.HTTP_1_1, HttpMethod.GET, targetUrl);
+            FullHttpRequest request = new DefaultFullHttpRequest(HttpVersion.HTTP_1_1, HttpMethod.CONNECT, reqStr);
             TargetConnectDTO targetConnect = new TargetConnectDTO();
             forwardRequest(request, targetConnect);
             handleHttpRequest(ctx, request, targetConnect.getHost(), targetConnect.getPort());
@@ -108,8 +111,6 @@ public class AnalysisWebSocketProxyHandler extends SimpleChannelInboundHandler<O
             // Pong frames are ignored
         }
     }
-
-
 
     private void forwardRequest(FullHttpRequest request, TargetConnectDTO targetConnect) {
         String host;

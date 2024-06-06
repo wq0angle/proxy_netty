@@ -9,5 +9,7 @@ public class TargetConnectDTO {
 
     private Integer port;
 
+    String url;
+
     private Integer proxyType;
 }

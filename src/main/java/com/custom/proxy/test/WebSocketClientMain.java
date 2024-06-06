@@ -24,8 +24,11 @@ public class WebSocketClientMain {
         URI uri = new URI("ws://127.0.0.1:6088/websocket"); // 修改为您的WebSocket服务端地址
         EventLoopGroup group = new NioEventLoopGroup();
         try {
-            WebSocketRelayHandler handler = new WebSocketRelayHandler(WebSocketClientHandshakerFactory
-                    .newHandshaker(uri, WebSocketVersion.V13, null, false, new DefaultHttpHeaders()));
+            //注意这里的false，因为我们不希望WebSocketRelayHandler处理HTTP响应
+            WebSocketClientHandshaker handshaker = WebSocketClientHandshakerFactory
+                    .newHandshaker(uri, WebSocketVersion.V13, null, false, new DefaultHttpHeaders());
+
+            WebSocketRelayHandler webSocketRelayHandler = new WebSocketRelayHandler(handshaker, null);
 
             Bootstrap b = new Bootstrap();
             b.group(group)
@@ -44,14 +47,14 @@ public class WebSocketClientMain {
 
                             // 添加自定义的WebSocket消息处理器
 //                            handler.setInboundChannel(ch);
-                            p.addLast(handler); // 接收并处理来自服务器的WebSocket消息
+                            p.addLast(webSocketRelayHandler); // 接收并处理来自服务器的WebSocket消息
                         }
                     });
 
             ChannelFuture connectFuture = b.connect(uri.getHost(), uri.getPort()).sync();
             Channel ch = connectFuture.channel();
 
-            handler.handshakeFuture().sync();
+            webSocketRelayHandler.handshakeFuture().sync();
 
             // 现在WebSocketClientProtocolHandler会自动处理握手，无需手动调用handshake方法
             // WebSocket连接建立后，逻辑已在userEventTriggered和CustomWebSocketFrameHandler中定义

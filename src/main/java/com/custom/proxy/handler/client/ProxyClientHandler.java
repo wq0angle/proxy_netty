@@ -44,8 +44,8 @@ public class ProxyClientHandler {
                             p.addLast(new HttpObjectAggregator(maxContentLength));
                             // 心跳检测，避免因长时间无数据传输导致的连接断开
                             ch.pipeline().addLast(new IdleStateHandler(0, 30, 0, TimeUnit.SECONDS));
-//                            p.addLast(new FillProxyHandler(remoteHost, remotePort));
-                            p.addLast(new FillWebSocketProxyHandler(remoteHost, remotePort));
+                            p.addLast(new FillProxyHandler(remoteHost, remotePort));
+//                            p.addLast(new FillWebSocketProxyHandler(remoteHost, remotePort));
                         }
                     });
 

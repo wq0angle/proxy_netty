@@ -24,32 +24,32 @@ public class RelayWebSocketHandler extends ChannelInboundHandlerAdapter {
     }
 
    @Override
-public void channelRead(ChannelHandlerContext ctx, Object msg) {
-    if (relayChannel.isActive()) {
-        switch (msg) {
-            case FullHttpResponse response -> {
-                log.info("reader message type: FullHttpResponse,context:{}", response);
-                TextWebSocketFrame frame = new TextWebSocketFrame(response.content().retain());
-                relayChannel.writeAndFlush(frame).addListener(ChannelFutureListener.CLOSE_ON_FAILURE);
+    public void channelRead(ChannelHandlerContext ctx, Object msg) {
+        if (relayChannel.isActive()) {
+            switch (msg) {
+                case FullHttpResponse response -> {
+                    log.info("reader message type: FullHttpResponse,context:{}", response);
+                    TextWebSocketFrame frame = new TextWebSocketFrame(response.content().retain());
+                    relayChannel.writeAndFlush(frame).addListener(ChannelFutureListener.CLOSE_ON_FAILURE);
+                }
+                case ByteBuf buf -> {
+                    log.info("reader message type: ByteBuf");
+                    relayChannel.writeAndFlush(buf.retain()).addListener(ChannelFutureListener.CLOSE_ON_FAILURE);
+                }
+                case WebSocketFrame webSocketFrame -> {
+                    log.info("reader message type: WebSocketFrame");
+                    relayChannel.writeAndFlush(webSocketFrame).addListener(ChannelFutureListener.CLOSE_ON_FAILURE);
+                }
+                case null, default -> {
+                    log.warn("Unexpected message type: {}", msg.getClass().getName());
+                    // 释放资源，避免内存泄漏
+                    ReferenceCountUtil.release(msg);
+                }
             }
-            case ByteBuf buf -> {
-                log.info("reader message type: ByteBuf");
-                relayChannel.writeAndFlush(buf.retain()).addListener(ChannelFutureListener.CLOSE_ON_FAILURE);
-            }
-            case WebSocketFrame webSocketFrame -> {
-                log.info("reader message type: WebSocketFrame");
-                relayChannel.writeAndFlush(webSocketFrame).addListener(ChannelFutureListener.CLOSE_ON_FAILURE);
-            }
-            case null, default -> {
-                log.warn("Unexpected message type: {}", msg.getClass().getName());
-                // 释放资源，避免内存泄漏
-                ReferenceCountUtil.release(msg);
-            }
+        } else {
+            ReferenceCountUtil.release(msg);
         }
-    } else {
-        ReferenceCountUtil.release(msg);
     }
-}
 
 
     @Override

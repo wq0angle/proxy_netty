@@ -1,26 +1,32 @@
 package com.custom.proxy.handler;
 
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
 import io.netty.channel.*;
+import io.netty.handler.codec.http.DefaultFullHttpResponse;
 import io.netty.handler.codec.http.FullHttpResponse;
+import io.netty.handler.codec.http.HttpResponseStatus;
+import io.netty.handler.codec.http.HttpVersion;
 import io.netty.handler.codec.http.websocketx.*;
 import io.netty.util.CharsetUtil;
+import io.netty.util.ReferenceCountUtil;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
 
 @Slf4j
-public class WebSocketRelayHandler extends SimpleChannelInboundHandler<Object> {
+public class WebSocketRelayHandler extends ChannelInboundHandlerAdapter {
 
     private final WebSocketClientHandshaker handshaker;
 
     private ChannelPromise handshakeFuture;
 
-    @Setter
-    private Channel inboundChannel;
+    private final Channel inboundChannel;
 
-    public WebSocketRelayHandler(WebSocketClientHandshaker handshaker) {
+    public WebSocketRelayHandler(WebSocketClientHandshaker handshaker, Channel inboundChannel) {
         this.handshaker = handshaker;
+        this.inboundChannel = inboundChannel;
     }
 
     public ChannelFuture handshakeFuture() {
@@ -44,7 +50,7 @@ public class WebSocketRelayHandler extends SimpleChannelInboundHandler<Object> {
     }
 
     @Override
-    public void channelRead0(ChannelHandlerContext ctx, Object msg) throws Exception {
+    public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
         Channel ch = ctx.channel();
         if (!handshaker.isHandshakeComplete()) {
             try {
@@ -59,31 +65,44 @@ public class WebSocketRelayHandler extends SimpleChannelInboundHandler<Object> {
         }
 
         if (msg instanceof FullHttpResponse response) {
-            throw new IllegalStateException("Unexpected FullHttpResponse (getStatus=" + response.status() + ", content="
-                    + response.content().toString(CharsetUtil.UTF_8) + ')');
-        }
+            // 处理HTTP响应
+            log.info("Received HTTP response: {}", response.status());
+            inboundChannel.writeAndFlush(response.retain());
 
-        WebSocketFrame frame = (WebSocketFrame) msg;
-        if (frame instanceof TextWebSocketFrame textFrame) {
-            log.info("接收到TXT消息: {}", textFrame.text());
-        } else if (frame instanceof BinaryWebSocketFrame) {
-            log.info("接收到二进制消息");
-        } else if (frame instanceof PongWebSocketFrame) {
-            log.info("接收到pong消息");
-        } else if (frame instanceof CloseWebSocketFrame) {
-            log.info("接收到closing消息");
-            ch.close();
-        }
+        } else if (msg instanceof WebSocketFrame frame) {
 
-        if (inboundChannel != null) {
-            inboundChannel.writeAndFlush(frame.retain());
+            if (frame instanceof TextWebSocketFrame textFrame) {
+                log.info("Received WebSocket message: {}", textFrame.text());
+                if (textFrame.text().contains("connect ok")) {
+                    FullHttpResponse response = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.OK);
+
+                    // 创建一个WebSocketFrame，将HTTP响应转换为二进制数据
+//                    ByteBuf content = Unpooled.copiedBuffer(response);
+//                    WebSocketFrame webSocketFrame = new BinaryWebSocketFrame(content);
+
+                    // 写入并刷新到inboundChannel
+                    inboundChannel.writeAndFlush(response);
+                }
+            }
+
+        }else {
+            if (inboundChannel.isActive()) {
+                inboundChannel.writeAndFlush(msg).addListener(ChannelFutureListener.CLOSE_ON_FAILURE);
+            } else {
+                ReferenceCountUtil.release(msg);
+                ctx.channel().close();
+            }
         }
     }
 
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
+        if (cause instanceof IOException && cause.getMessage().contains("Connection reset")) {
+            log.info("Connection was reset by the peer");
+        } else {
+            log.error("Error occurred in AnalysisWebSocketProxyHandler", cause);
+        }
         // 异常处理
-        log.error("出现异常", cause);
         if (!handshakeFuture.isDone()) {
             handshakeFuture.setFailure(cause);
         }
