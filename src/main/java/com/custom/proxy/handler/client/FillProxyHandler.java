@@ -1,6 +1,7 @@
 package com.custom.proxy.handler.client;
 
 import com.custom.proxy.handler.RelayHandler;
+import com.custom.proxy.handler.RelayHandler1;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.*;
 import io.netty.channel.socket.SocketChannel;
@@ -83,12 +84,14 @@ public class FillProxyHandler extends SimpleChannelInboundHandler<FullHttpReques
                 //释放临时添加转发的http解析器
                 future.channel().pipeline().remove(HttpClientCodec.class);
                 future.channel().pipeline().remove(HttpObjectAggregator.class);
-                future.channel().pipeline().addLast(new RelayHandler(future.channel()));
+
                 //释放该请求的全局监听的http解析器,透明转发请求,在connect后面的请求彻底转换为SSL隧道的TCP通信模式
                 ctx.pipeline().remove(HttpServerCodec.class);
                 ctx.pipeline().remove(HttpObjectAggregator.class);
                 ctx.pipeline().remove(this.getClass());  // 移除当前处理器
+
                 ctx.pipeline().addLast(new RelayHandler(future.channel()));  // 添加用于转发的handler
+
                 log.info("send connect request to post");
             } else {
                 ctx.writeAndFlush(new DefaultFullHttpResponse(

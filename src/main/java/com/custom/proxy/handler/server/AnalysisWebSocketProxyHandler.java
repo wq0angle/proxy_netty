@@ -4,11 +4,14 @@ import com.custom.proxy.entity.TargetConnectDTO;
 import com.custom.proxy.handler.RelayHandler;
 import com.custom.proxy.handler.RelayWebSocketHandler;
 import io.netty.bootstrap.Bootstrap;
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
 import io.netty.channel.*;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.handler.codec.http.*;
 import io.netty.handler.codec.http.websocketx.*;
+import io.netty.util.CharsetUtil;
 import io.netty.util.internal.StringUtil;
 import lombok.extern.slf4j.Slf4j;
 
@@ -28,15 +31,11 @@ public class AnalysisWebSocketProxyHandler extends SimpleChannelInboundHandler<O
                 targetConnect.setPort(urlArr.length < 2 ? 80 : Integer.parseInt(urlArr[1]));
                 handleConnectRequest(ctx, request, targetConnect.getHost(), targetConnect.getPort());
             }
-            else if ("websocket".equalsIgnoreCase(request.headers().get(HttpHeaderNames.UPGRADE))) {
-                handleWebSocketHandshake(ctx, request);
-            }
             else {
                 forwardRequest(request, targetConnect);
                 handleHttpRequest(ctx, request, targetConnect.getHost(), targetConnect.getPort());
             }
         } else if (msg instanceof WebSocketFrame) {
-            log.info("WebSocket Frame: {}", msg);
             handleWebSocketFrame(ctx, (WebSocketFrame) msg);
         }
     }
@@ -69,15 +68,20 @@ public class AnalysisWebSocketProxyHandler extends SimpleChannelInboundHandler<O
             if (future.isSuccess()) {
                 if (request.method() == HttpMethod.CONNECT) {
                     log.info("Connected to target server");
-                    WebSocketFrame frame = new TextWebSocketFrame("connect ok");
-                    ctx.writeAndFlush(frame);
+
+                    FullHttpResponse response = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.OK);
+                    // 创建一个WebSocketFrame，将HTTP响应转换为二进制数据
+                    ByteBuf content = Unpooled.wrappedBuffer(response.content());
+                    WebSocketFrame webSocketFrame = new BinaryWebSocketFrame(content);
+                    // 写入并刷新到inboundChannel
+                    ctx.writeAndFlush(content);
 
                     // 移除HTTP处理器并设置透明转发
                     removeCheckHttpHandler(ctx, HttpServerCodec.class);
                     removeCheckHttpHandler(ctx, HttpObjectAggregator.class);
                     removeCheckHttpHandler(ctx, this.getClass());  // 移除当前处理器
-//                    ctx.pipeline().addLast(new RelayWebSocketHandler(future.channel()));  // 添加用于转发的handler
-                    ctx.pipeline().addLast(new RelayHandler(future.channel()));  // 添加用于转发的handler
+                    ctx.pipeline().addLast(new RelayWebSocketHandler(future.channel()));  // 添加用于转发的handler
+//                    ctx.pipeline().addLast(new RelayHandler(future.channel()));  // 添加用于转发的handler
                 }else {
                     log.info("request body to target server");
                     // 构建新请求转发到服务端
@@ -98,6 +102,7 @@ public class AnalysisWebSocketProxyHandler extends SimpleChannelInboundHandler<O
         if (frame instanceof TextWebSocketFrame || frame instanceof BinaryWebSocketFrame) {
             // 处理WebSocket消息并转发到目标HTTP服务器
             String reqStr = ((TextWebSocketFrame) frame).text();
+            log.info("WebSocket Frame: {}", reqStr);
             // 假设目标URL在WebSocket消息中
             FullHttpRequest request = new DefaultFullHttpRequest(HttpVersion.HTTP_1_1, HttpMethod.CONNECT, reqStr);
             TargetConnectDTO targetConnect = new TargetConnectDTO();
@@ -106,6 +111,7 @@ public class AnalysisWebSocketProxyHandler extends SimpleChannelInboundHandler<O
         } else if (frame instanceof CloseWebSocketFrame) {
             ctx.close();
         } else if (frame instanceof PingWebSocketFrame) {
+            log.info("WebSocket Frame: {}", frame.content().toString(CharsetUtil.UTF_8));
             ctx.writeAndFlush(new PongWebSocketFrame(frame.content().retain()));
         } else if (frame instanceof PongWebSocketFrame) {
             // Pong frames are ignored
@@ -138,24 +144,6 @@ public class AnalysisWebSocketProxyHandler extends SimpleChannelInboundHandler<O
         }
         targetConnect.setHost(host);
         targetConnect.setPort(port);
-    }
-
-    private void handleWebSocketHandshake(ChannelHandlerContext ctx, FullHttpRequest req) {
-//        WebSocketServerHandshakerFactory wsFactory = new WebSocketServerHandshakerFactory(
-//                getWebSocketLocation(req), null, false);
-//        WebSocketServerHandshaker handshaker = wsFactory.newHandshaker(req);
-//        if (handshaker == null) {
-//            WebSocketServerHandshakerFactory.sendUnsupportedVersionResponse(ctx.channel());
-//        } else {
-//            handshaker.handshake(ctx.channel(), req).addListener(future -> {
-//                if (future.isSuccess()) {
-//                    log.info("WebSocket Handshake successful.");
-//                } else {
-//                    log.error("WebSocket Handshake failed.", future.cause());
-//                    ctx.close();
-//                }
-//            });
-//        }
     }
 
     private static String getWebSocketLocation(FullHttpRequest req) {
@@ -224,8 +212,8 @@ public class AnalysisWebSocketProxyHandler extends SimpleChannelInboundHandler<O
      * 当连接断开 最后执行的方法
      * 连接断开时 ， channel 会自动从 通道组中移除
      */
-    @Override
-    public void handlerRemoved(ChannelHandlerContext ctx) {
-        log.info("handlerRemoved | server ip : [{}] disconnected", ctx.channel().remoteAddress());
-    }
+//    @Override
+//    public void handlerRemoved(ChannelHandlerContext ctx) {
+//        log.info("handlerRemoved | server ip : [{}] disconnected", ctx.channel().remoteAddress());
+//    }
 }

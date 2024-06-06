@@ -89,9 +89,7 @@ public class FillWebSocketProxyHandler extends SimpleChannelInboundHandler<FullH
                             // 立即移除HTTP处理器
                             removeCheckHttpHandler(future.channel().pipeline(), HttpServerCodec.class);
                             removeCheckHttpHandler(future.channel().pipeline(), HttpObjectAggregator.class);
-                            future.channel().pipeline().addLast(new WebSocketRelayHandler(handshaker, future.channel()));
 //                            future.channel().pipeline().addLast(new RelayHandler(future.channel()));
-
 
                             removeCheckHttpHandler(ctx.pipeline(), HttpClientCodec.class);
                             removeCheckHttpHandler(ctx.pipeline(), this.getClass());

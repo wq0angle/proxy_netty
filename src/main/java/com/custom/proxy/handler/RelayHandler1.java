@@ -26,7 +26,8 @@ public class RelayHandler1 extends ChannelInboundHandlerAdapter {
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) {
         if (relayChannel.isActive()) {
-
+            Class<?> msgClass = msg.getClass();
+            log.info("RelayHandler1: {}", msgClass.getSimpleName());
             if (msg instanceof FullHttpResponse response) {
                 if (response.headers().contains("test")){
 

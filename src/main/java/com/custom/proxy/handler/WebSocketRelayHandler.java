@@ -73,16 +73,15 @@ public class WebSocketRelayHandler extends ChannelInboundHandlerAdapter {
 
             if (frame instanceof TextWebSocketFrame textFrame) {
                 log.info("Received WebSocket message: {}", textFrame.text());
-                if (textFrame.text().contains("connect ok")) {
-                    FullHttpResponse response = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.OK);
-
-                    // 创建一个WebSocketFrame，将HTTP响应转换为二进制数据
-//                    ByteBuf content = Unpooled.copiedBuffer(response);
-//                    WebSocketFrame webSocketFrame = new BinaryWebSocketFrame(content);
-
-                    // 写入并刷新到inboundChannel
-                    inboundChannel.writeAndFlush(response);
-                }
+            }else if (frame instanceof BinaryWebSocketFrame binaryFrame){
+                log.info("Received WebSocket message: {}", binaryFrame.content().toString(CharsetUtil.UTF_8));
+            }
+            else if (frame instanceof PingWebSocketFrame pingFrame) {
+                log.info("Received WebSocket ping frame");
+                ctx.writeAndFlush(new PongWebSocketFrame(pingFrame.content()));
+            }
+            else if (frame instanceof PongWebSocketFrame pongFrame) {
+                log.info("Received WebSocket pong frame");
             }
 
         }else {
