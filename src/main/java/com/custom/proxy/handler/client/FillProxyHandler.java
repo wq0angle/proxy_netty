@@ -68,7 +68,7 @@ public class FillProxyHandler extends SimpleChannelInboundHandler<FullHttpReques
                     @Override
                     protected void initChannel(SocketChannel ch) throws Exception {
                         // 仅添加用于转发的handler
-//                        ch.pipeline().addLast(sslContext.newHandler(ch.alloc(), host, remotePort)); // 添加 SSL 处理器
+//                        ch.pipeline().addLast(sslContext.newHandler(ch.alloc(), remoteHost, remotePort)); // 添加 SSL 处理器
                         ch.pipeline().addLast(new LoggingHandler(LogLevel.INFO)); // 添加日志处理器，输出 SSL 握手过程中的详细信息
                         ch.pipeline().addLast(new HttpClientCodec());
                         ch.pipeline().addLast(new HttpObjectAggregator(maxContentLength));

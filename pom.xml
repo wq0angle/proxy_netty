@@ -90,6 +90,13 @@
             <version>3.11.11</version>
         </dependency>
 
+        <dependency>
+            <groupId>com.squareup.okhttp3</groupId>
+            <artifactId>okhttp</artifactId>
+            <version>4.9.3</version> <!-- 或者使用最新版本 -->
+        </dependency>
+
+
     </dependencies>
 
     <build>

@@ -3,10 +3,7 @@ package com.custom.proxy.handler;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.*;
-import io.netty.handler.codec.http.DefaultFullHttpResponse;
-import io.netty.handler.codec.http.FullHttpResponse;
-import io.netty.handler.codec.http.HttpResponseStatus;
-import io.netty.handler.codec.http.HttpVersion;
+import io.netty.handler.codec.http.*;
 import io.netty.handler.codec.http.websocketx.*;
 import io.netty.util.CharsetUtil;
 import io.netty.util.ReferenceCountUtil;
@@ -75,6 +72,17 @@ public class WebSocketRelayHandler extends ChannelInboundHandlerAdapter {
                 log.info("Received WebSocket message: {}", textFrame.text());
             }else if (frame instanceof BinaryWebSocketFrame binaryFrame){
                 log.info("Received WebSocket message: {}", binaryFrame.content().toString(CharsetUtil.UTF_8));
+//                inboundChannel.writeAndFlush(msg).addListener(ChannelFutureListener.CLOSE_ON_FAILURE);
+                FullHttpResponse response = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.OK);
+                // 创建一个WebSocketFrame，将HTTP响应转换为二进制数据
+                ByteBuf content = Unpooled.wrappedBuffer(response.content());
+                WebSocketFrame webSocketFrame = new BinaryWebSocketFrame(content);
+                // 写入并刷新到inboundChannel
+                inboundChannel.writeAndFlush(webSocketFrame).addListener(ChannelFutureListener.CLOSE_ON_FAILURE);
+
+//                ctx.pipeline().remove(HttpClientCodec.class);
+//                ctx.pipeline().remove(HttpObjectAggregator.class);
+//                ctx.pipeline().remove(this);
             }
             else if (frame instanceof PingWebSocketFrame pingFrame) {
                 log.info("Received WebSocket ping frame");
@@ -82,6 +90,10 @@ public class WebSocketRelayHandler extends ChannelInboundHandlerAdapter {
             }
             else if (frame instanceof PongWebSocketFrame pongFrame) {
                 log.info("Received WebSocket pong frame");
+            }
+            else if (frame instanceof CloseWebSocketFrame closeFrame) {
+                log.info("Received WebSocket close frame");
+                ctx.close();
             }
 
         }else {

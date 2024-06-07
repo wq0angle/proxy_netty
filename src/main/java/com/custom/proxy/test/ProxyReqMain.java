@@ -1,6 +1,7 @@
 package com.custom.proxy.test;
 
 import lombok.extern.slf4j.Slf4j;
+import okhttp3.*;
 
 import javax.net.ssl.HttpsURLConnection;
 import java.io.BufferedReader;
@@ -8,6 +9,7 @@ import java.io.InputStreamReader;
 import java.net.InetSocketAddress;
 import java.net.Proxy;
 import java.net.URL;
+import java.net.http.HttpResponse;
 
 @Slf4j
 public class ProxyReqMain {

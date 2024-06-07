@@ -73,15 +73,16 @@ public class AnalysisWebSocketProxyHandler extends SimpleChannelInboundHandler<O
                     // 创建一个WebSocketFrame，将HTTP响应转换为二进制数据
                     ByteBuf content = Unpooled.wrappedBuffer(response.content());
                     WebSocketFrame webSocketFrame = new BinaryWebSocketFrame(content);
+
                     // 写入并刷新到inboundChannel
-                    ctx.writeAndFlush(content);
+                    ctx.writeAndFlush(webSocketFrame);
 
                     // 移除HTTP处理器并设置透明转发
                     removeCheckHttpHandler(ctx, HttpServerCodec.class);
                     removeCheckHttpHandler(ctx, HttpObjectAggregator.class);
                     removeCheckHttpHandler(ctx, this.getClass());  // 移除当前处理器
-                    ctx.pipeline().addLast(new RelayWebSocketHandler(future.channel()));  // 添加用于转发的handler
-//                    ctx.pipeline().addLast(new RelayHandler(future.channel()));  // 添加用于转发的handler
+//                    ctx.pipeline().addLast(new RelayWebSocketHandler(future.channel()));  // 添加用于转发的handler
+                    ctx.pipeline().addLast(new RelayHandler(future.channel()));  // 添加用于转发的handler
                 }else {
                     log.info("request body to target server");
                     // 构建新请求转发到服务端
