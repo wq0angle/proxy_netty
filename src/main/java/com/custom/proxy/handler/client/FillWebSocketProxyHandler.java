@@ -48,13 +48,13 @@ public class FillWebSocketProxyHandler extends SimpleChannelInboundHandler<FullH
         try {
             URI uri = new URI("ws://" + remoteHost + ":" + remotePort + "/websocket");
             // 创建包含额外头部参数的HttpHeaders对象
-            FullHttpRequest forwardRequest = new DefaultFullHttpRequest(
-                    request.protocolVersion(), request.method(), request.uri());
+//            FullHttpRequest forwardRequest = new DefaultFullHttpRequest(
+//                    request.protocolVersion(), request.method(), request.uri());
 
             //connect请求临时改为POST请求,携带host信息到请求头
-            forwardRequest.headers().add("X-Target-Url", request.uri());
-            forwardRequest.headers().set("X-Target-Method", request.method().name());
-            forwardRequest.content().writeBytes(request.content()); // 添加请求体
+//            forwardRequest.headers().add("X-Target-Url", request.uri());
+//            forwardRequest.headers().set("X-Target-Method", request.method().name());
+//            forwardRequest.content().writeBytes(request.content()); // 添加请求体
 
             //注意这里的false，因为我们不希望WebSocketRelayHandler处理HTTP响应
             WebSocketClientHandshaker handshaker = WebSocketClientHandshakerFactory
@@ -96,13 +96,13 @@ public class FillWebSocketProxyHandler extends SimpleChannelInboundHandler<FullH
                             // 立即移除HTTP处理器
                             removeCheckHttpHandler(future.channel().pipeline(), HttpServerCodec.class);
                             removeCheckHttpHandler(future.channel().pipeline(), HttpObjectAggregator.class);
-                            removeCheckHttpHandler(future.channel().pipeline(), WebSocketRelayHandler.class);
+//                            removeCheckHttpHandler(future.channel().pipeline(), WebSocketRelayHandler.class);
 
                             removeCheckHttpHandler(ctx.pipeline(), HttpClientCodec.class);
                             removeCheckHttpHandler(ctx.pipeline(), this.getClass());
                             removeCheckHttpHandler(ctx.pipeline(), HttpObjectAggregator.class);
                             ctx.channel().pipeline().addLast(new WebSocketRelayHandler(handshaker, future.channel()));
-                            ctx.channel().pipeline().addLast(new RelayHandler(future.channel()));
+//                            ctx.channel().pipeline().addLast(new RelayHandler(future.channel()));
                         }
                     });
 

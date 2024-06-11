@@ -1,5 +1,6 @@
 package com.custom.proxy.handler;
 
+import com.custom.proxy.util.WebSocketUtil;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.*;
@@ -11,9 +12,11 @@ import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 
 @Slf4j
-public class WebSocketRelayHandler extends ChannelInboundHandlerAdapter {
+public class WebSocketRelayHandler extends ChannelDuplexHandler  {
 
     private final WebSocketClientHandshaker handshaker;
 
@@ -68,32 +71,34 @@ public class WebSocketRelayHandler extends ChannelInboundHandlerAdapter {
 
         } else if (msg instanceof WebSocketFrame frame) {
 
-            if (frame instanceof TextWebSocketFrame textFrame) {
-                log.info("Received WebSocket message: {}", textFrame.text());
-            }else if (frame instanceof BinaryWebSocketFrame binaryFrame){
-                log.info("Received WebSocket message: {}", binaryFrame.content().toString(CharsetUtil.UTF_8));
-//                inboundChannel.writeAndFlush(msg).addListener(ChannelFutureListener.CLOSE_ON_FAILURE);
-                FullHttpResponse response = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.OK);
-                // 创建一个WebSocketFrame，将HTTP响应转换为二进制数据
-                ByteBuf content = Unpooled.wrappedBuffer(response.content());
-                WebSocketFrame webSocketFrame = new BinaryWebSocketFrame(content);
-                // 写入并刷新到inboundChannel
-                inboundChannel.writeAndFlush(webSocketFrame).addListener(ChannelFutureListener.CLOSE_ON_FAILURE);
+            switch (frame) {
+                case TextWebSocketFrame textFrame -> {
+                    log.info("Received WebSocket message: {}", textFrame.text());
+                    String text = textFrame.text();
+                    handleTextFrame(text, ctx);
+                }
+                case BinaryWebSocketFrame binaryFrame -> {
+                    log.info("Received WebSocket message: {}", binaryFrame.content().toString(CharsetUtil.UTF_8));
+                    // 处理二进制帧
+                    ByteBuf content = binaryFrame.content();
 
-//                ctx.pipeline().remove(HttpClientCodec.class);
-//                ctx.pipeline().remove(HttpObjectAggregator.class);
-//                ctx.pipeline().remove(this);
-            }
-            else if (frame instanceof PingWebSocketFrame pingFrame) {
-                log.info("Received WebSocket ping frame");
-                ctx.writeAndFlush(new PongWebSocketFrame(pingFrame.content()));
-            }
-            else if (frame instanceof PongWebSocketFrame pongFrame) {
-                log.info("Received WebSocket pong frame");
-            }
-            else if (frame instanceof CloseWebSocketFrame closeFrame) {
-                log.info("Received WebSocket close frame");
-                ctx.close();
+                    byte[] contentArray = new byte[content.readableBytes()];
+                    content.readBytes(contentArray);
+                    log.info("content: {}", bytesToHex(contentArray));
+
+                    handleBinaryFrame(content, ctx);
+                }
+                case PingWebSocketFrame pingFrame -> {
+                    log.info("Received WebSocket ping frame");
+                    ctx.writeAndFlush(new PongWebSocketFrame(pingFrame.content()));
+                }
+                case PongWebSocketFrame pongFrame -> log.info("Received WebSocket pong frame");
+                case CloseWebSocketFrame closeFrame -> {
+                    log.info("Received WebSocket close frame");
+                    ctx.close();
+                }
+                default -> {
+                }
             }
 
         }else {
@@ -103,6 +108,18 @@ public class WebSocketRelayHandler extends ChannelInboundHandlerAdapter {
                 ReferenceCountUtil.release(msg);
                 ctx.channel().close();
             }
+        }
+    }
+
+    @Override
+    public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) throws Exception {
+        if (msg instanceof ByteBuf data) {
+            // 将TCP流数据封装成WebSocket帧
+            WebSocketFrame frame = new BinaryWebSocketFrame(data);
+            ctx.write(frame, promise);
+        } else {
+            // 传递非ByteBuf消息
+            super.write(ctx, msg, promise); // 调用父类的write方法来处理非ByteBuf消息
         }
     }
 
@@ -118,5 +135,30 @@ public class WebSocketRelayHandler extends ChannelInboundHandlerAdapter {
             handshakeFuture.setFailure(cause);
         }
         ctx.close();
+    }
+
+    private void handleBinaryFrame(ByteBuf content, ChannelHandlerContext ctx) {
+        // 这里将二进制数据转换为TCP流格式
+        // 示例：直接将二进制数据写入到应用层的SocketChannel
+        if (inboundChannel.isActive()) {
+            inboundChannel.writeAndFlush(content.retain());
+        }
+    }
+
+    private void handleTextFrame(String text, ChannelHandlerContext ctx) {
+        // 处理文本数据，转换为TCP流格式
+        // 示例：将文本数据转换为ByteBuf后写入到应用层的SocketChannel
+        ByteBuf buffer = Unpooled.wrappedBuffer(text.getBytes(StandardCharsets.UTF_8));
+        if (inboundChannel.isActive()) {
+            inboundChannel.writeAndFlush(buffer);
+        }
+    }
+
+    private static String bytesToHex(byte[] bytes) {
+        StringBuilder sb = new StringBuilder();
+        for (byte b : bytes) {
+            sb.append(String.format("%02x", b)).append(", ");
+        }
+        return sb.toString();
     }
 }
