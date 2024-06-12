@@ -6,6 +6,8 @@ import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.handler.codec.http.*;
 import io.netty.handler.codec.http.websocketx.WebSocketServerProtocolHandler;
+import io.netty.handler.logging.LogLevel;
+import io.netty.handler.logging.LoggingHandler;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.EnableAsync;
@@ -33,7 +35,7 @@ public class ProxyServerHandler{
                             ChannelPipeline p = ch.pipeline();
                             //添加sniHandler，根据域名添加对应证书到SSL解析器
 //                            p.addLast(SslContextProvider.getSniHandler(sslContext1, sslContext2));
-//                            p.addLast(new LoggingHandler(LogLevel.INFO)); // 添加日志处理器，输出 SSL 握手过程中的详细信息
+                            p.addLast(new LoggingHandler(LogLevel.DEBUG)); // 添加日志处理器，输出 SSL 握手过程中的详细信息
                             p.addLast(new HttpServerCodec());
                             p.addLast(new HttpObjectAggregator(maxContentLength));
                             p.addLast(new WebSocketServerProtocolHandler("/websocket"));

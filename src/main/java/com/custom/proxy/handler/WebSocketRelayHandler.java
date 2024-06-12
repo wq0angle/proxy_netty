@@ -16,13 +16,15 @@ import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
 @Slf4j
+@ChannelHandler.Sharable
 public class WebSocketRelayHandler extends ChannelDuplexHandler  {
 
     private final WebSocketClientHandshaker handshaker;
 
     private ChannelPromise handshakeFuture;
 
-    private final Channel inboundChannel;
+    @Setter
+    private Channel inboundChannel;
 
     public WebSocketRelayHandler(WebSocketClientHandshaker handshaker, Channel inboundChannel) {
         this.handshaker = handshaker;
@@ -46,7 +48,7 @@ public class WebSocketRelayHandler extends ChannelDuplexHandler  {
 
     @Override
     public void channelInactive(ChannelHandlerContext ctx) {
-        log.info("channelInactive!");
+        log.info("当前通道不再活跃!");
     }
 
     @Override
@@ -115,9 +117,16 @@ public class WebSocketRelayHandler extends ChannelDuplexHandler  {
     public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) throws Exception {
         if (msg instanceof ByteBuf data) {
             // 将TCP流数据封装成WebSocket帧
+//            ByteBuf content = Unpooled.buffer();
+//            String test = "test";
+//            content.writeBytes(test.getBytes());
+
             WebSocketFrame frame = new BinaryWebSocketFrame(data);
-            ctx.write(frame, promise);
-        } else {
+            log.info("write WebSocket message: {}", frame.content().toString(CharsetUtil.UTF_8));
+//            WebSocketFrame frame = new BinaryWebSocketFrame(data);
+            ctx.writeAndFlush(frame, promise);
+        }
+        else {
             // 传递非ByteBuf消息
             super.write(ctx, msg, promise); // 调用父类的write方法来处理非ByteBuf消息
         }
@@ -128,7 +137,7 @@ public class WebSocketRelayHandler extends ChannelDuplexHandler  {
         if (cause instanceof IOException && cause.getMessage().contains("Connection reset")) {
             log.info("Connection was reset by the peer");
         } else {
-            log.error("Error occurred in AnalysisWebSocketProxyHandler", cause);
+            log.error("Error occurred in WebSocketRelayHandler", cause);
         }
         // 异常处理
         if (!handshakeFuture.isDone()) {

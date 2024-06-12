@@ -47,14 +47,6 @@ public class FillWebSocketProxyHandler extends SimpleChannelInboundHandler<FullH
     private void handleConnect(ChannelHandlerContext ctx, FullHttpRequest request) {
         try {
             URI uri = new URI("ws://" + remoteHost + ":" + remotePort + "/websocket");
-            // 创建包含额外头部参数的HttpHeaders对象
-//            FullHttpRequest forwardRequest = new DefaultFullHttpRequest(
-//                    request.protocolVersion(), request.method(), request.uri());
-
-            //connect请求临时改为POST请求,携带host信息到请求头
-//            forwardRequest.headers().add("X-Target-Url", request.uri());
-//            forwardRequest.headers().set("X-Target-Method", request.method().name());
-//            forwardRequest.content().writeBytes(request.content()); // 添加请求体
 
             //注意这里的false，因为我们不希望WebSocketRelayHandler处理HTTP响应
             WebSocketClientHandshaker handshaker = WebSocketClientHandshakerFactory
@@ -85,6 +77,8 @@ public class FillWebSocketProxyHandler extends SimpleChannelInboundHandler<FullH
                     webSocketRelayHandler.handshakeFuture().addListener(handshakeFuture -> {
                         if (!handshakeFuture.isSuccess()) {
                             log.error("WebSocket Handshake initiation failed", handshakeFuture.cause());
+                            ctx.writeAndFlush(new DefaultFullHttpResponse(
+                                    HttpVersion.HTTP_1_1, HttpResponseStatus.INTERNAL_SERVER_ERROR));
                             ctx.close();
                         }else {
                             log.info("send connect to server");
@@ -94,15 +88,14 @@ public class FillWebSocketProxyHandler extends SimpleChannelInboundHandler<FullH
                             future.channel().writeAndFlush(frame);
 
                             // 立即移除HTTP处理器
-                            removeCheckHttpHandler(future.channel().pipeline(), HttpServerCodec.class);
-                            removeCheckHttpHandler(future.channel().pipeline(), HttpObjectAggregator.class);
-//                            removeCheckHttpHandler(future.channel().pipeline(), WebSocketRelayHandler.class);
+//                            removeCheckHttpHandler(future.channel().pipeline(), HttpServerCodec.class);
+//                            removeCheckHttpHandler(future.channel().pipeline(), HttpObjectAggregator.class);
 
-                            removeCheckHttpHandler(ctx.pipeline(), HttpClientCodec.class);
-                            removeCheckHttpHandler(ctx.pipeline(), this.getClass());
-                            removeCheckHttpHandler(ctx.pipeline(), HttpObjectAggregator.class);
-                            ctx.channel().pipeline().addLast(new WebSocketRelayHandler(handshaker, future.channel()));
-//                            ctx.channel().pipeline().addLast(new RelayHandler(future.channel()));
+//                            removeCheckHttpHandler(ctx.pipeline(), HttpClientCodec.class);
+//                            removeCheckHttpHandler(ctx.pipeline(), this.getClass());
+//                            removeCheckHttpHandler(ctx.pipeline(), HttpObjectAggregator.class);
+                            webSocketRelayHandler.setInboundChannel(future.channel());
+                            ctx.channel().pipeline().addLast(webSocketRelayHandler);
                         }
                     });
 

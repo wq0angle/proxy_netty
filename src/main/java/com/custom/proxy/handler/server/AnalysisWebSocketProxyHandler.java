@@ -82,7 +82,6 @@ public class AnalysisWebSocketProxyHandler extends SimpleChannelInboundHandler<O
                     removeCheckHttpHandler(ctx, HttpObjectAggregator.class);
                     removeCheckHttpHandler(ctx, this.getClass());  // 移除当前处理器
                     ctx.pipeline().addLast(new RelayWebSocketHandler(future.channel()));  // 添加用于转发的handler
-//                    ctx.pipeline().addLast(new RelayHandler(future.channel()));  // 添加用于转发的handler
                 }else {
                     log.info("request body to target server");
                     // 构建新请求转发到服务端
@@ -100,7 +99,7 @@ public class AnalysisWebSocketProxyHandler extends SimpleChannelInboundHandler<O
     }
 
     private void handleWebSocketFrame(ChannelHandlerContext ctx, WebSocketFrame frame) {
-        if (frame instanceof TextWebSocketFrame || frame instanceof BinaryWebSocketFrame) {
+        if (frame instanceof TextWebSocketFrame) {
             // 处理WebSocket消息并转发到目标HTTP服务器
             String reqStr = ((TextWebSocketFrame) frame).text();
             log.info("WebSocket Frame: {}", reqStr);
@@ -109,6 +108,8 @@ public class AnalysisWebSocketProxyHandler extends SimpleChannelInboundHandler<O
             TargetConnectDTO targetConnect = new TargetConnectDTO();
             forwardRequest(request, targetConnect);
             handleHttpRequest(ctx, request, targetConnect.getHost(), targetConnect.getPort());
+        } else if (frame instanceof BinaryWebSocketFrame) {
+            log.info("WebSocket Frame: {}", frame.content().toString(CharsetUtil.UTF_8));
         } else if (frame instanceof CloseWebSocketFrame) {
             ctx.close();
         } else if (frame instanceof PingWebSocketFrame) {
