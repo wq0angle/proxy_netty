@@ -1,7 +1,6 @@
 package com.custom.proxy.handler.client;
 
 import com.custom.proxy.handler.RelayHandler;
-import com.custom.proxy.handler.RelayHandler1;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.*;
 import io.netty.channel.socket.SocketChannel;

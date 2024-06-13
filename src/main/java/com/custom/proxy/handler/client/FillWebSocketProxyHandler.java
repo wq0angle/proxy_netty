@@ -1,17 +1,13 @@
 package com.custom.proxy.handler.client;
 
-import com.alibaba.fastjson.JSON;
-import com.custom.proxy.entity.TargetConnectDTO;
-import com.custom.proxy.handler.RelayHandler;
+import com.custom.proxy.handler.FramePackRelayHandler;
 import com.custom.proxy.handler.WebSocketRelayHandler;
-import com.custom.proxy.util.WebSocketUtil;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.*;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.handler.codec.http.*;
 import io.netty.handler.codec.http.websocketx.*;
-import io.netty.handler.codec.http.websocketx.extensions.compression.WebSocketClientCompressionHandler;
 import io.netty.handler.logging.LogLevel;
 import io.netty.handler.logging.LoggingHandler;
 import io.netty.handler.ssl.SslContext;
@@ -20,7 +16,6 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
 import java.net.URI;
-import java.net.URISyntaxException;
 
 @Slf4j
 public class FillWebSocketProxyHandler extends SimpleChannelInboundHandler<FullHttpRequest> {
@@ -92,10 +87,12 @@ public class FillWebSocketProxyHandler extends SimpleChannelInboundHandler<FullH
 //                            removeCheckHttpHandler(future.channel().pipeline(), HttpObjectAggregator.class);
 
 //                            removeCheckHttpHandler(ctx.pipeline(), HttpClientCodec.class);
-//                            removeCheckHttpHandler(ctx.pipeline(), this.getClass());
+                            removeCheckHttpHandler(ctx.pipeline(), this.getClass());
+
 //                            removeCheckHttpHandler(ctx.pipeline(), HttpObjectAggregator.class);
                             webSocketRelayHandler.setInboundChannel(future.channel());
                             ctx.channel().pipeline().addLast(webSocketRelayHandler);
+//                            ctx.channel().pipeline().addLast(new WebSocketRelayHandler(handshaker, future.channel()));
                         }
                     });
 

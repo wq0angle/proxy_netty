@@ -61,8 +61,8 @@ public class RelayWebSocketHandler extends ChannelDuplexHandler {
                 case FullHttpResponse response -> {
                     log.info("reader message type: FullHttpResponse,context:{}", response);
                     // 将HTTP响应转换为WebSocket帧
-                    WebSocketFrame frame = WebSocketUtil.convertToWebSocketFrame(response);
-                    ctx.writeAndFlush(frame).addListener(ChannelFutureListener.CLOSE_ON_FAILURE);
+//                    WebSocketFrame frame = WebSocketUtil.convertToWebSocketFrame(response);
+//                    ctx.writeAndFlush(frame).addListener(ChannelFutureListener.CLOSE_ON_FAILURE);
                 }
                 case ByteBuf buf -> {
                     log.info("reader message ByteBuf:{}",buf.toString(CharsetUtil.UTF_8));

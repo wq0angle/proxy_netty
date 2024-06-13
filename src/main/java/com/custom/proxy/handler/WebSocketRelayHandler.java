@@ -65,70 +65,38 @@ public class WebSocketRelayHandler extends ChannelDuplexHandler  {
             }
             return;
         }
-
-        if (msg instanceof FullHttpResponse response) {
-            // 处理HTTP响应
-            log.info("Received HTTP response: {}", response.status());
-            inboundChannel.writeAndFlush(response.retain());
-
-        } else if (msg instanceof WebSocketFrame frame) {
-
-            switch (frame) {
-                case TextWebSocketFrame textFrame -> {
-                    log.info("Received WebSocket message: {}", textFrame.text());
-                    String text = textFrame.text();
-                    handleTextFrame(text, ctx);
-                }
-                case BinaryWebSocketFrame binaryFrame -> {
-                    log.info("Received WebSocket message: {}", binaryFrame.content().toString(CharsetUtil.UTF_8));
-                    // 处理二进制帧
-                    ByteBuf content = binaryFrame.content();
-
-                    byte[] contentArray = new byte[content.readableBytes()];
-                    content.readBytes(contentArray);
-                    log.info("content: {}", bytesToHex(contentArray));
-
-                    handleBinaryFrame(content, ctx);
-                }
-                case PingWebSocketFrame pingFrame -> {
-                    log.info("Received WebSocket ping frame");
-                    ctx.writeAndFlush(new PongWebSocketFrame(pingFrame.content()));
-                }
-                case PongWebSocketFrame pongFrame -> log.info("Received WebSocket pong frame");
-                case CloseWebSocketFrame closeFrame -> {
-                    log.info("Received WebSocket close frame");
-                    ctx.close();
-                }
-                default -> {
-                }
-            }
-
-        }else {
-            if (inboundChannel.isActive()) {
-                inboundChannel.writeAndFlush(msg).addListener(ChannelFutureListener.CLOSE_ON_FAILURE);
-            } else {
-                ReferenceCountUtil.release(msg);
-                ctx.channel().close();
-            }
+        if (inboundChannel.isActive()) {
+            inboundChannel.writeAndFlush(msg).addListener(ChannelFutureListener.CLOSE_ON_FAILURE);
+        } else {
+            ReferenceCountUtil.release(msg);
+            ctx.channel().close();
         }
     }
 
     @Override
     public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) throws Exception {
-        if (msg instanceof ByteBuf data) {
-            // 将TCP流数据封装成WebSocket帧
-//            ByteBuf content = Unpooled.buffer();
-//            String test = "test";
-//            content.writeBytes(test.getBytes());
-
-            WebSocketFrame frame = new BinaryWebSocketFrame(data);
-            log.info("write WebSocket message: {}", frame.content().toString(CharsetUtil.UTF_8));
-//            WebSocketFrame frame = new BinaryWebSocketFrame(data);
-            ctx.writeAndFlush(frame, promise);
-        }
-        else {
-            // 传递非ByteBuf消息
-            super.write(ctx, msg, promise); // 调用父类的write方法来处理非ByteBuf消息
+        switch (msg) {
+            case BinaryWebSocketFrame frame -> {
+                log.info("Websocket二进制帧转TCP流,frame:{}", frame.content().toString(CharsetUtil.UTF_8));
+                ByteBuf buf = frame.content();
+                ctx.writeAndFlush(buf);
+            }
+            case TextWebSocketFrame frame -> {
+                String text = frame.text();
+                if (text.contains(WebSocketUtil.frameHead)) {
+                    log.info("Websocket文本帧转TCP流,frame:{}", frame.text());
+                    text = text.substring(WebSocketUtil.frameHead.length());
+                    ctx.writeAndFlush(Unpooled.copiedBuffer(text.getBytes(StandardCharsets.UTF_8)));
+                } else {
+                    super.write(ctx, msg, promise);
+                }
+            }
+            case ByteBuf data -> {
+                log.info("TCP流转Websocket二进制帧,data:{}", data.toString(CharsetUtil.UTF_8));
+                WebSocketFrame frame = new BinaryWebSocketFrame(data);
+                ctx.writeAndFlush(frame, promise);
+            }
+            case null, default -> super.write(ctx, msg, promise);
         }
     }
 

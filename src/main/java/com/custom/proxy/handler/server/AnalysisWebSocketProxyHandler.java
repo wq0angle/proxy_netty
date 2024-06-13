@@ -1,12 +1,9 @@
 package com.custom.proxy.handler.server;
 
 import com.custom.proxy.entity.TargetConnectDTO;
-import com.custom.proxy.handler.RelayHandler;
-import com.custom.proxy.handler.RelayWebSocketHandler;
+import com.custom.proxy.handler.FramePackRelayHandler;
 import com.custom.proxy.util.WebSocketUtil;
 import io.netty.bootstrap.Bootstrap;
-import io.netty.buffer.ByteBuf;
-import io.netty.buffer.Unpooled;
 import io.netty.channel.*;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
@@ -60,7 +57,8 @@ public class AnalysisWebSocketProxyHandler extends SimpleChannelInboundHandler<O
                             ch.pipeline().addLast(new HttpObjectAggregator(maxContentLength));
                         }
                         // 仅添加用于转发的handler,代理服务端无需SSL处理，因为握手过程处理交由代理客户端处理
-                        ch.pipeline().addLast(new RelayWebSocketHandler(ctx.channel()));
+//                        ch.pipeline().addLast(new RelayWebSocketHandler(ctx.channel()));
+                        ch.pipeline().addLast(new FramePackRelayHandler(ctx.channel()));
                     }
                 });
 
@@ -72,8 +70,8 @@ public class AnalysisWebSocketProxyHandler extends SimpleChannelInboundHandler<O
 
                     FullHttpResponse response = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.OK);
                     response.headers().set("test", "text/plain; charset=UTF-8");
-                    // 创建一个WebSocketFrame，将HTTP响应转换为二进制数据
-                    WebSocketFrame frame = WebSocketUtil.convertToWebSocketFrame(response);
+                    // 创建一个WebSocketFrame，将HTTP响应转换为文本帧数据
+                    WebSocketFrame frame = WebSocketUtil.convertToTextWebSocketFrame(response);
                     // 写入并刷新到inboundChannel
                     ctx.writeAndFlush(frame);
 
@@ -81,7 +79,8 @@ public class AnalysisWebSocketProxyHandler extends SimpleChannelInboundHandler<O
                     removeCheckHttpHandler(ctx, HttpServerCodec.class);
                     removeCheckHttpHandler(ctx, HttpObjectAggregator.class);
                     removeCheckHttpHandler(ctx, this.getClass());  // 移除当前处理器
-                    ctx.pipeline().addLast(new RelayWebSocketHandler(future.channel()));  // 添加用于转发的handler
+                    ctx.pipeline().addLast(new FramePackRelayHandler(future.channel()));
+//                    ctx.pipeline().addLast(new RelayWebSocketHandler(future.channel()));  // 添加用于转发的handler
                 }else {
                     log.info("request body to target server");
                     // 构建新请求转发到服务端
