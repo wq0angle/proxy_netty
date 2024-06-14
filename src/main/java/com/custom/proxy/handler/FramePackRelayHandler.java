@@ -18,8 +18,9 @@ import java.nio.charset.StandardCharsets;
 public class FramePackRelayHandler extends ChannelDuplexHandler {
     private final Channel relayChannel;
 
-    public FramePackRelayHandler(Channel relayChannel) {
+    public FramePackRelayHandler(Channel relayChannel, Integer addCnt) {
         this.relayChannel = relayChannel;
+        this.addCnt = addCnt;
     }
 
     @Override
@@ -31,6 +32,7 @@ public class FramePackRelayHandler extends ChannelDuplexHandler {
             ctx.channel().close();
         }
     }
+    private final Integer addCnt;
     @Override
     public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) throws Exception {
         switch (msg) {
@@ -40,6 +42,7 @@ public class FramePackRelayHandler extends ChannelDuplexHandler {
                 ctx.writeAndFlush(buf);
             }
             case TextWebSocketFrame frame -> {
+                log.info("Websocket文本帧,frame:{}", frame.text());
                 super.write(ctx, msg, promise);
             }
             case ByteBuf data -> {

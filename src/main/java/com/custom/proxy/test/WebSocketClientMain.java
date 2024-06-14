@@ -28,7 +28,7 @@ public class WebSocketClientMain {
             WebSocketClientHandshaker handshaker = WebSocketClientHandshakerFactory
                     .newHandshaker(uri, WebSocketVersion.V13, null, false, new DefaultHttpHeaders());
 
-            WebSocketRelayHandler webSocketRelayHandler = new WebSocketRelayHandler(handshaker, null);
+            WebSocketRelayHandler webSocketRelayHandler = new WebSocketRelayHandler(handshaker, null,1);
 
             Bootstrap b = new Bootstrap();
             b.group(group)

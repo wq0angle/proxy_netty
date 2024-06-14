@@ -26,9 +26,10 @@ public class WebSocketRelayHandler extends ChannelDuplexHandler  {
     @Setter
     private Channel inboundChannel;
 
-    public WebSocketRelayHandler(WebSocketClientHandshaker handshaker, Channel inboundChannel) {
+    public WebSocketRelayHandler(WebSocketClientHandshaker handshaker, Channel inboundChannel, Integer addCnt) {
         this.handshaker = handshaker;
         this.inboundChannel = inboundChannel;
+        this.addCnt = addCnt;
     }
 
     public ChannelFuture handshakeFuture() {
@@ -73,6 +74,7 @@ public class WebSocketRelayHandler extends ChannelDuplexHandler  {
         }
     }
 
+    private final Integer addCnt;
     @Override
     public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) throws Exception {
         switch (msg) {
@@ -84,11 +86,14 @@ public class WebSocketRelayHandler extends ChannelDuplexHandler  {
             case TextWebSocketFrame frame -> {
                 String text = frame.text();
                 if (text.contains(WebSocketUtil.frameHead)) {
-                    log.info("Websocket文本帧转TCP流,frame:{}", frame.text());
+//                    log.info("Websocket文本帧转TCP流,frame:{}", frame.text());
                     text = text.substring(WebSocketUtil.frameHead.length());
-                    ctx.writeAndFlush(Unpooled.copiedBuffer(text.getBytes(StandardCharsets.UTF_8)));
+                    ByteBuf content = Unpooled.buffer();
+                    content.writeBytes(text.getBytes(StandardCharsets.UTF_8));
+                    ctx.writeAndFlush(content);
                 } else {
-                    super.write(ctx, msg, promise);
+//                    super.write(ctx, msg, promise);
+                    ctx.writeAndFlush(frame);
                 }
             }
             case ByteBuf data -> {
@@ -112,23 +117,6 @@ public class WebSocketRelayHandler extends ChannelDuplexHandler  {
             handshakeFuture.setFailure(cause);
         }
         ctx.close();
-    }
-
-    private void handleBinaryFrame(ByteBuf content, ChannelHandlerContext ctx) {
-        // 这里将二进制数据转换为TCP流格式
-        // 示例：直接将二进制数据写入到应用层的SocketChannel
-        if (inboundChannel.isActive()) {
-            inboundChannel.writeAndFlush(content.retain());
-        }
-    }
-
-    private void handleTextFrame(String text, ChannelHandlerContext ctx) {
-        // 处理文本数据，转换为TCP流格式
-        // 示例：将文本数据转换为ByteBuf后写入到应用层的SocketChannel
-        ByteBuf buffer = Unpooled.wrappedBuffer(text.getBytes(StandardCharsets.UTF_8));
-        if (inboundChannel.isActive()) {
-            inboundChannel.writeAndFlush(buffer);
-        }
     }
 
     private static String bytesToHex(byte[] bytes) {

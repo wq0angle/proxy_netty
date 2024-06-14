@@ -1,6 +1,5 @@
 package com.custom.proxy.handler.client;
 
-import com.custom.proxy.handler.FramePackRelayHandler;
 import com.custom.proxy.handler.WebSocketRelayHandler;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.*;
@@ -47,7 +46,7 @@ public class FillWebSocketProxyHandler extends SimpleChannelInboundHandler<FullH
             WebSocketClientHandshaker handshaker = WebSocketClientHandshakerFactory
                     .newHandshaker(uri, WebSocketVersion.V13, null, false, new DefaultHttpHeaders());
 
-            WebSocketRelayHandler webSocketRelayHandler = new WebSocketRelayHandler(handshaker, ctx.channel());
+            WebSocketRelayHandler webSocketRelayHandler = new WebSocketRelayHandler(handshaker, ctx.channel(),1);
 
             Integer maxContentLength = 1024 * 1024 * 10;
             Bootstrap b = new Bootstrap();
@@ -83,16 +82,14 @@ public class FillWebSocketProxyHandler extends SimpleChannelInboundHandler<FullH
                             future.channel().writeAndFlush(frame);
 
                             // 立即移除HTTP处理器
-//                            removeCheckHttpHandler(future.channel().pipeline(), HttpServerCodec.class);
-//                            removeCheckHttpHandler(future.channel().pipeline(), HttpObjectAggregator.class);
+                            removeCheckHttpHandler(future.channel().pipeline(), HttpServerCodec.class);
+                            removeCheckHttpHandler(future.channel().pipeline(), HttpObjectAggregator.class);
 
-//                            removeCheckHttpHandler(ctx.pipeline(), HttpClientCodec.class);
+                            removeCheckHttpHandler(ctx.pipeline(), HttpServerCodec.class);
+                            removeCheckHttpHandler(ctx.pipeline(), HttpObjectAggregator.class);
                             removeCheckHttpHandler(ctx.pipeline(), this.getClass());
 
-//                            removeCheckHttpHandler(ctx.pipeline(), HttpObjectAggregator.class);
-                            webSocketRelayHandler.setInboundChannel(future.channel());
-                            ctx.channel().pipeline().addLast(webSocketRelayHandler);
-//                            ctx.channel().pipeline().addLast(new WebSocketRelayHandler(handshaker, future.channel()));
+                            ctx.channel().pipeline().addLast(new WebSocketRelayHandler(handshaker, future.channel(),2));
                         }
                     });
 
