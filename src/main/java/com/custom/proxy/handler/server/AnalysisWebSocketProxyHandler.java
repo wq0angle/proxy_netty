@@ -19,13 +19,14 @@ import java.io.IOException;
 import java.time.LocalDate;
 
 @Slf4j
-public class AnalysisWebSocketProxyHandler extends SimpleChannelInboundHandler<Object> {
+public class AnalysisWebSocketProxyHandler extends SimpleChannelInboundHandler<WebSocketFrame> {
+
     @Override
-    protected void channelRead0(ChannelHandlerContext ctx, Object msg) {
-        if (msg instanceof WebSocketFrame) {
-            handleWebSocketFrame(ctx, (WebSocketFrame) msg);
+    protected void channelRead0(ChannelHandlerContext ctx, WebSocketFrame msg) {
+        if (msg != null) {
+            handleWebSocketFrame(ctx, msg);
         } else {
-            log.info("检测到非WebSocket帧请求:{}", msg);
+            log.info("检测到WebSocket帧请求为空");
         }
     }
 
@@ -38,7 +39,7 @@ public class AnalysisWebSocketProxyHandler extends SimpleChannelInboundHandler<O
                     @Override
                     protected void initChannel(SocketChannel ch) {
                         // 仅添加用于转发的handler,代理服务端无需SSL处理，因为握手过程处理交由代理客户端处理
-                        ch.pipeline().addLast(new LoggingHandler(LogLevel.INFO));
+//                        ch.pipeline().addLast(new LoggingHandler(LogLevel.INFO));
                         ch.pipeline().addLast(new FramePackRelayHandler(ctx.channel(),1));
                     }
                 });

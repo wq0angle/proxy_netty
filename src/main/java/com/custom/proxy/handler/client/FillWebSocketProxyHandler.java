@@ -11,17 +11,22 @@ import io.netty.handler.logging.LogLevel;
 import io.netty.handler.logging.LoggingHandler;
 import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslContextBuilder;
+import io.netty.handler.timeout.IdleStateHandler;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
 import java.net.URI;
+import java.net.URISyntaxException;
+import java.util.Objects;
+import java.util.concurrent.TimeUnit;
 
 @Slf4j
 public class FillWebSocketProxyHandler extends SimpleChannelInboundHandler<FullHttpRequest> {
 
-    private final String remoteHost;
-    private final int remotePort;
-    private final SslContext sslContext;
+    private String remoteHost;
+    private int remotePort;
+    private SslContext sslContext;
+    private static volatile Channel websocketChannel; // WebSocket连接的通道
 
     public FillWebSocketProxyHandler(String remoteHost, int remotePort) throws Exception {
         this.remoteHost = remoteHost;
@@ -35,76 +40,77 @@ public class FillWebSocketProxyHandler extends SimpleChannelInboundHandler<FullH
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, FullHttpRequest request) throws Exception {
         log.info("Received http request: {}", request.uri());
-        handleConnect(ctx, request);
+        if (websocketChannel == null || !websocketChannel.isActive()) {
+            log.info("首次进行websocket握手，加载websocket通道");
+            handleConnect(ctx, request);
+        } else {
+            log.info("发送数据到服务器");
+            sendRequestOverWebSocket(ctx, request);
+        }
+
     }
 
-    private void handleConnect(ChannelHandlerContext ctx, FullHttpRequest request) {
-        try {
-            URI uri = new URI("ws://" + remoteHost + ":" + remotePort + "/websocket");
+    WebSocketClientHandshaker handshaker;
+    private void handleConnect(ChannelHandlerContext ctx, FullHttpRequest request) throws URISyntaxException {
+        URI uri = new URI("wss://" + remoteHost + ":" + remotePort + "/websocket");
+        handshaker = WebSocketClientHandshakerFactory
+                .newHandshaker(uri, WebSocketVersion.V13, null, false, new DefaultHttpHeaders());
+        WebSocketRelayHandler webSocketRelayHandler = new WebSocketRelayHandler(handshaker, ctx.channel(), 1);
 
-            //注意这里的false，因为我们不希望WebSocketRelayHandler处理HTTP响应
-            WebSocketClientHandshaker handshaker = WebSocketClientHandshakerFactory
-                    .newHandshaker(uri, WebSocketVersion.V13, null, false, new DefaultHttpHeaders());
+        Bootstrap b = new Bootstrap();
+        b.group(ctx.channel().eventLoop())
+                .channel(NioSocketChannel.class)
+                .handler(new ChannelInitializer<SocketChannel>() {
+                    @Override
+                    protected void initChannel(SocketChannel ch) throws Exception {
+                        ch.pipeline().addLast(sslContext.newHandler(ch.alloc(), remoteHost, remotePort));
+                        ch.pipeline().addLast(new HttpClientCodec());
+                        ch.pipeline().addLast(new HttpObjectAggregator(1024 * 1024 * 10));
 
-            WebSocketRelayHandler webSocketRelayHandler = new WebSocketRelayHandler(handshaker, ctx.channel(),1);
+                        // 读超时60秒，写超时30秒
+                        ch.pipeline().addLast(new IdleStateHandler(60, 30, 0, TimeUnit.SECONDS));
 
-            Integer maxContentLength = 1024 * 1024 * 10;
-            Bootstrap b = new Bootstrap();
-            b.group(ctx.channel().eventLoop())
-                    .channel(NioSocketChannel.class)
-                    .handler(new ChannelInitializer<SocketChannel>() {
-                        @Override
-                        protected void initChannel(SocketChannel ch) throws Exception {
-                            ch.pipeline().addLast(new LoggingHandler(LogLevel.INFO));
-                            ch.pipeline().addLast(new HttpClientCodec());
-                            ch.pipeline().addLast(new HttpObjectAggregator(maxContentLength));
+                        ch.pipeline().addLast(webSocketRelayHandler);
+                    }
+                });
 
-                            ch.pipeline().addLast(webSocketRelayHandler);
-                        }
-                    });
+        b.connect(remoteHost, remotePort).addListener((ChannelFutureListener) future -> {
+            if (future.isSuccess()) {
+                websocketChannel = future.channel();
+                webSocketRelayHandler.handshakeFuture().addListener((ChannelFutureListener) handshakeFuture -> {
+                    if (handshakeFuture.isSuccess()) {
+                        sendRequestOverWebSocket(ctx, request);
+                    } else {
+                        log.error("WebSocket握手失败");
+                        ctx.writeAndFlush(new DefaultFullHttpResponse(
+                                HttpVersion.HTTP_1_1, HttpResponseStatus.INTERNAL_SERVER_ERROR));
+                        ctx.close();
+                    }
+                });
+            } else {
+                log.error("WebSocket连接失败");
+                ctx.writeAndFlush(new DefaultFullHttpResponse(
+                        HttpVersion.HTTP_1_1, HttpResponseStatus.INTERNAL_SERVER_ERROR));
+                ctx.close();
+            }
+        });
+    }
 
-            ChannelFuture connectFuture = b.connect(remoteHost, remotePort);
-            connectFuture.addListener((ChannelFutureListener) future -> {
-                if (future.isSuccess()) {
-                    log.info("WebSocket connection established");
-                    // 发送WebSocket握手请求
-                    webSocketRelayHandler.handshakeFuture().addListener(handshakeFuture -> {
-                        if (!handshakeFuture.isSuccess()) {
-                            log.error("WebSocket Handshake initiation failed", handshakeFuture.cause());
-                            ctx.writeAndFlush(new DefaultFullHttpResponse(
-                                    HttpVersion.HTTP_1_1, HttpResponseStatus.INTERNAL_SERVER_ERROR));
-                            ctx.close();
-                        }else {
-                            log.info("send connect to server");
+    private void sendRequestOverWebSocket(ChannelHandlerContext ctx, FullHttpRequest request) {
+        if (websocketChannel != null && websocketChannel.isActive()) {
+            // 发送CONNECT请求到代理服务端
+            WebSocketFrame frame = new TextWebSocketFrame(request.uri());
+            websocketChannel.writeAndFlush(frame);
 
-                            // 发送CONNECT请求到代理服务端
-                            WebSocketFrame frame = new TextWebSocketFrame(request.uri());
-                            future.channel().writeAndFlush(frame);
+            // 立即移除客户都和服务端的channel通道HTTP处理器
+            removeCheckHttpHandler(websocketChannel.pipeline(), HttpServerCodec.class);
+            removeCheckHttpHandler(websocketChannel.pipeline(), HttpObjectAggregator.class);
+            removeCheckHttpHandler(ctx.pipeline(), HttpServerCodec.class);
+            removeCheckHttpHandler(ctx.pipeline(), HttpObjectAggregator.class);
 
-                            // 立即移除HTTP处理器
-                            removeCheckHttpHandler(future.channel().pipeline(), HttpServerCodec.class);
-                            removeCheckHttpHandler(future.channel().pipeline(), HttpObjectAggregator.class);
-
-                            removeCheckHttpHandler(ctx.pipeline(), HttpServerCodec.class);
-                            removeCheckHttpHandler(ctx.pipeline(), HttpObjectAggregator.class);
-                            removeCheckHttpHandler(ctx.pipeline(), this.getClass());
-
-                            ctx.channel().pipeline().addLast(new WebSocketRelayHandler(handshaker, future.channel(),2));
-                        }
-                    });
-
-                } else {
-                    log.error("WebSocket connection failed", future.cause());
-                    ctx.writeAndFlush(new DefaultFullHttpResponse(
-                            HttpVersion.HTTP_1_1, HttpResponseStatus.INTERNAL_SERVER_ERROR));
-                    ctx.close();
-                }
-            });
-        } catch (Exception e) {
-            log.error("WebSocket connection error", e);
-            ctx.writeAndFlush(new DefaultFullHttpResponse(
-                    HttpVersion.HTTP_1_1, HttpResponseStatus.INTERNAL_SERVER_ERROR));
-            ctx.close();
+            //流处理器替换
+            removeCheckHttpHandler(ctx.pipeline(), this.getClass());
+            ctx.channel().pipeline().addLast(new WebSocketRelayHandler(handshaker, websocketChannel,2));
         }
     }
 

@@ -6,12 +6,15 @@ import io.netty.buffer.Unpooled;
 import io.netty.channel.*;
 import io.netty.handler.codec.http.*;
 import io.netty.handler.codec.http.websocketx.*;
+import io.netty.handler.timeout.IdleState;
+import io.netty.handler.timeout.IdleStateEvent;
 import io.netty.util.CharsetUtil;
 import io.netty.util.ReferenceCountUtil;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
+import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
@@ -50,6 +53,9 @@ public class WebSocketRelayHandler extends ChannelDuplexHandler  {
     @Override
     public void channelInactive(ChannelHandlerContext ctx) {
         log.info("当前通道不再活跃!");
+        if (inboundChannel != null && inboundChannel.isActive()) {
+            inboundChannel.close();
+        }
     }
 
     @Override
@@ -79,7 +85,7 @@ public class WebSocketRelayHandler extends ChannelDuplexHandler  {
     public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) throws Exception {
         switch (msg) {
             case BinaryWebSocketFrame frame -> {
-                log.info("Websocket二进制帧转TCP流,frame:{}", frame.content().toString(CharsetUtil.UTF_8));
+//                log.info("Websocket二进制帧转TCP流,frame:{}", frame.content().toString(CharsetUtil.UTF_8));
                 ByteBuf buf = frame.content();
                 ctx.writeAndFlush(buf);
             }
@@ -96,7 +102,7 @@ public class WebSocketRelayHandler extends ChannelDuplexHandler  {
                 }
             }
             case ByteBuf data -> {
-                log.info("TCP流转Websocket二进制帧,data:{}", data.toString(CharsetUtil.UTF_8));
+//                log.info("TCP流转Websocket二进制帧,data:{}", data.toString(CharsetUtil.UTF_8));
                 WebSocketFrame frame = new BinaryWebSocketFrame(data);
                 ctx.writeAndFlush(frame, promise);
 //                super.write(ctx, msg, promise);
@@ -125,5 +131,18 @@ public class WebSocketRelayHandler extends ChannelDuplexHandler  {
             sb.append(String.format("%02x", b)).append(", ");
         }
         return sb.toString();
+    }
+
+    @Override
+    public void userEventTriggered(ChannelHandlerContext ctx, Object evt) throws Exception {
+        if (evt instanceof IdleStateEvent e) {
+            if (e.state() == IdleState.READER_IDLE) {
+                log.info("读超时，关闭连接");
+                ctx.close();
+            } else if (e.state() == IdleState.WRITER_IDLE) {
+                log.info("写超时，发送心跳");
+                ctx.writeAndFlush(new PingWebSocketFrame());
+            }
+        }
     }
 }
