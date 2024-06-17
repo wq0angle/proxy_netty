@@ -26,7 +26,7 @@ public class FillWebSocketProxyHandler extends SimpleChannelInboundHandler<FullH
     private String remoteHost;
     private int remotePort;
     private SslContext sslContext;
-    private static volatile Channel websocketChannel; // WebSocket连接的通道
+    private Channel websocketChannel; // WebSocket连接的通道
 
     public FillWebSocketProxyHandler(String remoteHost, int remotePort) throws Exception {
         this.remoteHost = remoteHost;
