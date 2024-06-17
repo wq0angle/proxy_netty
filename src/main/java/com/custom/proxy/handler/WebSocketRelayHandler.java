@@ -92,14 +92,14 @@ public class WebSocketRelayHandler extends ChannelDuplexHandler  {
                     content.writeBytes(text.getBytes(StandardCharsets.UTF_8));
                     ctx.writeAndFlush(content);
                 } else {
-//                    super.write(ctx, msg, promise);
-                    ctx.writeAndFlush(frame);
+                    super.write(ctx, msg, promise);
                 }
             }
             case ByteBuf data -> {
                 log.info("TCP流转Websocket二进制帧,data:{}", data.toString(CharsetUtil.UTF_8));
                 WebSocketFrame frame = new BinaryWebSocketFrame(data);
                 ctx.writeAndFlush(frame, promise);
+//                super.write(ctx, msg, promise);
             }
             case null, default -> super.write(ctx, msg, promise);
         }

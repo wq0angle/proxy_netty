@@ -37,7 +37,7 @@ public class FramePackRelayHandler extends ChannelDuplexHandler {
     public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) throws Exception {
         switch (msg) {
             case BinaryWebSocketFrame frame -> {
-                log.info("Websocket二进制帧转TCP流,frame:{}", frame.content().toString(CharsetUtil.UTF_8));
+                log.info("Websocket二进制帧转TCP流", frame.content().toString(CharsetUtil.ISO_8859_1));
                 ByteBuf buf = frame.content();
                 ctx.writeAndFlush(buf);
             }
@@ -46,7 +46,7 @@ public class FramePackRelayHandler extends ChannelDuplexHandler {
                 super.write(ctx, msg, promise);
             }
             case ByteBuf data -> {
-                log.info("TCP流转Websocket二进制帧,data:{}", data.toString(CharsetUtil.UTF_8));
+                log.info("TCP流转Websocket二进制帧,data:{}", data.toString(CharsetUtil.ISO_8859_1));
                 WebSocketFrame frame = new BinaryWebSocketFrame(data);
                 ctx.writeAndFlush(frame, promise);
             }
@@ -65,6 +65,6 @@ public class FramePackRelayHandler extends ChannelDuplexHandler {
 
     @Override
     public void handlerAdded(ChannelHandlerContext ctx) {
-        log.info("Websocket帧转TCP流的通道建立");
+        log.info("Websocket帧互转TCP流的通道建立");
     }
 }
