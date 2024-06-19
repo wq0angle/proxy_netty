@@ -9,23 +9,22 @@
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
     <groupId>com.custom</groupId>
-    <artifactId>proxy</artifactId>
+    <artifactId>test</artifactId>
     <version>0.0.1-SNAPSHOT</version>
-    <name>proxy</name>
-    <description>proxy</description>
+    <name>test</name>
+    <description>test</description>
+
     <properties>
         <java.version>22</java.version>
     </properties>
+
     <repositories>
         <repository>
             <id>aliyun</id>
             <url>https://maven.aliyun.com/repository/public</url>
         </repository>
-<!--        <repository>-->
-<!--            <id>netty-incubator</id>-->
-<!--            <url>https://oss.sonatype.org/content/repositories/netty-incubator/</url>-->
-<!--        </repository>-->
     </repositories>
+
     <dependencies>
 
         <dependency>
@@ -95,7 +94,6 @@
             <artifactId>okhttp</artifactId>
             <version>4.9.3</version> <!-- 或者使用最新版本 -->
         </dependency>
-
 
     </dependencies>
 
