@@ -1,8 +1,7 @@
-package com.netty.custom.handler.server;
+package com.netty.server.handler;
 
-import com.netty.custom.config.AppConfig;
-import com.netty.custom.entity.TargetConnectDTO;
-import com.netty.custom.handler.RelayHandler;
+import com.netty.common.entity.*;
+import com.netty.server.config.AppConfig;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.*;
 import io.netty.channel.socket.SocketChannel;
@@ -99,7 +98,7 @@ public class AnalysisProxyHandler extends SimpleChannelInboundHandler<FullHttpRe
         else {
             // 不带X-Target-Host头部的请求，返回指定目录的HTML内容 | 一般为get或者post请求,url为地址后面路径
             host = "127.0.0.1";
-            port = appConfig.getRemotePort();
+            port = appConfig.getWebsitePort();
             if(request.uri().equals("/")){
                 request.setUri("/index.html");
             }

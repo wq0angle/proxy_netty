@@ -1,4 +1,4 @@
-package com.netty.custom.config;
+package com.netty.server.config;
 
 import lombok.Data;
 import org.springframework.beans.factory.annotation.Value;
@@ -7,7 +7,7 @@ import org.springframework.context.annotation.PropertySource;
 import org.springframework.stereotype.Component;
 
 @Configuration
-@PropertySource("file:${user.dir}/proxy.properties")
+@PropertySource("file:${user.dir}/server-proxy.properties")
 @Data
 @Component
 public class AppConfig {
