@@ -16,7 +16,7 @@ import java.nio.file.Files;
 @Component
 public class WebsiteServerHandler {
 
-    @Async
+//    @Async
     public void start(String ipAddress,Integer port,String websiteDirectory) throws IOException {
 
         HttpServer server = HttpServer.create(new InetSocketAddress(ipAddress, port), 0);

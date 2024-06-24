@@ -11,19 +11,6 @@ import org.springframework.stereotype.Component;
 @Data
 @Component
 public class AppConfig {
-
-    @Value("${remote.host}")
-    private String remoteHost;
-
-    @Value("${remote.port}")
-    private int remotePort;
-
-    @Value("${local.port}")
-    private Integer localPort;
-
-    @Value("${ssl.request.enabled}")
-    private Boolean sslRequestEnabled;
-
     @Value("${server.port}")
     private Integer serverPort;
 
