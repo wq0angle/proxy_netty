@@ -7,3 +7,6 @@ target/
 
 ### VS Code ###
 .vscode/
+/log/error/
+/log/info/
+/tls/

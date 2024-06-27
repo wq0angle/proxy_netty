@@ -22,6 +22,7 @@
         <module>common</module>
         <module>test</module>
         <module>server</module>
+        <module>client</module>
     </modules>
 
     <packaging>pom</packaging>
