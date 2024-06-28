@@ -106,6 +106,10 @@
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
+                <version>3.3.0</version>
+                <configuration>
+                    <skip>true</skip> <!-- 添加这行来跳过重新打包 -->
+                </configuration>
             </plugin>
         </plugins>
     </build>
