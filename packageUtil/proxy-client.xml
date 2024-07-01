@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<launch4jConfig>
+  <dontWrapJar>false</dontWrapJar>
+  <headerType>console</headerType>
+  <jar>D:\ProxyProject\proxy\client\target\client-0.0.1-SNAPSHOT.jar</jar>
+  <outfile>C:\Users\wq0angle\Desktop\proxy-client\proxy-client.exe</outfile>
+  <errTitle></errTitle>
+  <cmdLine></cmdLine>
+  <chdir>.</chdir>
+  <priority>high</priority>
+  <downloadUrl></downloadUrl>
+  <supportUrl></supportUrl>
+  <stayAlive>false</stayAlive>
+  <restartOnCrash>false</restartOnCrash>
+  <manifest></manifest>
+  <icon></icon>
+  <jre>
+    <path>C:\Users\wq0angle\.jdks\corretto-22.0.1</path>
+    <requiresJdk>false</requiresJdk>
+    <requires64Bit>false</requires64Bit>
+    <minVersion>22.0.1</minVersion>
+    <maxVersion></maxVersion>
+  </jre>
+  <versionInfo>
+    <fileVersion>1.1.1.1</fileVersion>
+    <txtFileVersion>1.1.1.1</txtFileVersion>
+    <fileDescription>基于netty开发的代理客户端程序，使用websocket方式通信代理</fileDescription>
+    <copyright>wq0angle</copyright>
+    <productVersion>1.1.1.1</productVersion>
+    <txtProductVersion>1.1.1.1</txtProductVersion>
+    <productName>proxy-client</productName>
+    <companyName>https://github.com/wq0angle/proxy_netty</companyName>
+    <internalName>netty-proxy-client</internalName>
+    <originalFilename>proxy-client.exe</originalFilename>
+    <trademarks>wq0angle</trademarks>
+    <language>SIMPLIFIED_CHINESE</language>
+  </versionInfo>
+  <messages>
+    <startupErr>An error occurred while starting the application.</startupErr>
+    <jreNotFoundErr>This application requires a Java Runtime Environment.</jreNotFoundErr>
+    <jreVersionErr>This application requires a Java Runtime Environment</jreVersionErr>
+    <launcherErr>The registry refers to a nonexistent Java Runtime Environment installation or the runtime is corrupted.</launcherErr>
+    <instanceAlreadyExistsMsg>An application instance is already running.</instanceAlreadyExistsMsg>
+  </messages>
+</launch4jConfig>
