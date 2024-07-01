@@ -1,5 +1,6 @@
-package com.netty.client.handler;
+package com.netty.client.entry;
 
+import com.netty.client.handler.FillWebSocketProxyHandler;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelInitializer;
@@ -17,7 +18,7 @@ import org.springframework.stereotype.Component;
 
 @Slf4j
 @Component
-public class ProxyClientHandler {
+public class ProxyClientEntry {
 
     /**
      * 启动客户端，初始化连接并设置默认处理器链。
