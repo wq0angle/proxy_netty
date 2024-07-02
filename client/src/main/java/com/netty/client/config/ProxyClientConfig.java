@@ -26,8 +26,6 @@ public class ProxyClientConfig {
         addWindowsConfigEntry();
         addProxyClientEntry();
 
-        //添加程序关闭钩子，处理关闭事件
-//        addShutdownHook();
         return "附加服务执行完毕";
     }
 
@@ -46,13 +44,4 @@ public class ProxyClientConfig {
         windowsConfigEntry.enableProxy(localHost,localPort);
     }
 
-    private void addShutdownHook() {
-        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-            try {
-                windowsConfigEntry.disableProxy();
-            } catch (Exception e) {
-                log.error("关闭代理失败", e);
-            }
-        }));
-    }
 }

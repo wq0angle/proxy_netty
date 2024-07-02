@@ -1,5 +1,6 @@
 package com.netty.client.handler;
 
+import com.netty.client.config.AppConfig;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.*;
 import io.netty.channel.socket.SocketChannel;
@@ -23,10 +24,12 @@ public class FillWebSocketProxyHandler extends SimpleChannelInboundHandler<FullH
     private int remotePort;
     private SslContext sslContext;
     private Channel websocketChannel; // WebSocket连接的通道
+    private AppConfig appConfig;
 
-    public FillWebSocketProxyHandler(String remoteHost, int remotePort) throws Exception {
+    public FillWebSocketProxyHandler(String remoteHost, int remotePort, AppConfig appConfig) throws Exception {
         this.remoteHost = remoteHost;
         this.remotePort = remotePort;
+        this.appConfig = appConfig;
         this.sslContext = SslContextBuilder.forClient()
                 .protocols("TLSv1.1", "TLSv1.2", "TLSv1.3")
                 .ciphers(null)  // 默认使用所有可用的加密套件
@@ -37,10 +40,10 @@ public class FillWebSocketProxyHandler extends SimpleChannelInboundHandler<FullH
     protected void channelRead0(ChannelHandlerContext ctx, FullHttpRequest request) throws Exception {
         log.info("Received http request: {}", request.uri());
         if (websocketChannel == null || !websocketChannel.isActive()) {
-            log.info("首次进行websocket握手，加载websocket通道");
+            log.debug("首次进行websocket握手，加载websocket通道");
             handleConnect(ctx, request);
         } else {
-            log.info("发送数据到服务器");
+            log.debug("发送数据到服务器");
             sendRequestOverWebSocket(ctx, request);
         }
 
@@ -48,7 +51,13 @@ public class FillWebSocketProxyHandler extends SimpleChannelInboundHandler<FullH
 
     WebSocketClientHandshaker handshaker;
     private void handleConnect(ChannelHandlerContext ctx, FullHttpRequest request) throws URISyntaxException {
-        URI uri = new URI("wss://" + remoteHost + ":" + remotePort + "/websocket");
+        String wsUri;
+        if (appConfig.getSslRequestEnabled()) {
+            wsUri = "wss://";
+        }else {
+            wsUri = "ws://";
+        }
+        URI uri = new URI(wsUri + remoteHost + ":" + remotePort + "/websocket");
         handshaker = WebSocketClientHandshakerFactory
                 .newHandshaker(uri, WebSocketVersion.V13, null, false, new DefaultHttpHeaders());
         WebSocketRelayHandler webSocketRelayHandler = new WebSocketRelayHandler(handshaker, ctx.channel(), 1);
@@ -59,7 +68,9 @@ public class FillWebSocketProxyHandler extends SimpleChannelInboundHandler<FullH
                 .handler(new ChannelInitializer<SocketChannel>() {
                     @Override
                     protected void initChannel(SocketChannel ch) throws Exception {
-                        ch.pipeline().addLast(sslContext.newHandler(ch.alloc(), remoteHost, remotePort));
+                        if (appConfig.getSslRequestEnabled()) {
+                            ch.pipeline().addLast(sslContext.newHandler(ch.alloc(), remoteHost, remotePort));
+                        }
                         ch.pipeline().addLast(new HttpClientCodec());
                         ch.pipeline().addLast(new HttpObjectAggregator(1024 * 1024 * 10));
 
@@ -77,14 +88,14 @@ public class FillWebSocketProxyHandler extends SimpleChannelInboundHandler<FullH
                     if (handshakeFuture.isSuccess()) {
                         sendRequestOverWebSocket(ctx, request);
                     } else {
-                        log.error("WebSocket握手失败");
+                        log.error("WebSocket握手失败,{}:{}",remoteHost,remotePort);
                         ctx.writeAndFlush(new DefaultFullHttpResponse(
                                 HttpVersion.HTTP_1_1, HttpResponseStatus.INTERNAL_SERVER_ERROR));
                         ctx.close();
                     }
                 });
             } else {
-                log.error("WebSocket连接失败");
+                log.error("WebSocket连接失败,{}:{}",remoteHost,remotePort);
                 ctx.writeAndFlush(new DefaultFullHttpResponse(
                         HttpVersion.HTTP_1_1, HttpResponseStatus.INTERNAL_SERVER_ERROR));
                 ctx.close();
@@ -98,14 +109,14 @@ public class FillWebSocketProxyHandler extends SimpleChannelInboundHandler<FullH
             WebSocketFrame frame = new TextWebSocketFrame(request.uri());
             websocketChannel.writeAndFlush(frame);
 
-            // 立即移除客户都和服务端的channel通道HTTP处理器
+            // 立即移除客户端和服务端的channel通道HTTP处理器
             removeCheckHttpHandler(websocketChannel.pipeline(), HttpServerCodec.class);
             removeCheckHttpHandler(websocketChannel.pipeline(), HttpObjectAggregator.class);
             removeCheckHttpHandler(ctx.pipeline(), HttpServerCodec.class);
             removeCheckHttpHandler(ctx.pipeline(), HttpObjectAggregator.class);
 
             //流处理器替换
-            removeCheckHttpHandler(ctx.pipeline(), this.getClass());
+            removeCheckHttpHandler(ctx.pipeline(), this.getClass()); //移除当前处理器
             ctx.channel().pipeline().addLast(new WebSocketRelayHandler(handshaker, websocketChannel,2));
         }
     }
@@ -113,7 +124,7 @@ public class FillWebSocketProxyHandler extends SimpleChannelInboundHandler<FullH
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
         if (cause instanceof IOException && cause.getMessage().contains("Connection reset")) {
-            log.info("Connection was reset by the peer");
+            log.debug("Connection was reset by the peer");
         } else {
             log.error("Error occurred in FillProxyHandler", cause);
         }
@@ -122,7 +133,6 @@ public class FillWebSocketProxyHandler extends SimpleChannelInboundHandler<FullH
 
     private void removeCheckHttpHandler(ChannelPipeline pipeline, Class<? extends ChannelHandler> clazz) {
         if (pipeline.get(clazz) != null){
-            log.info("remove check http handler");
             pipeline.remove(clazz);
         }
     }

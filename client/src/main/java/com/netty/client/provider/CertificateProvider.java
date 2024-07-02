@@ -29,6 +29,9 @@ import java.security.*;
 import java.security.cert.*;
 import java.util.*;
 
+/**
+ * @deprecated 目前无需中间人方式进行代理,暂不需要根证书系列操作
+ */
 @Data
 @Slf4j
 public class CertificateProvider {

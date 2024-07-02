@@ -1,5 +1,8 @@
 package com.netty.client.entry;
 
+import com.netty.client.config.AppConfig;
+import com.netty.client.enums.ProxyReqEnum;
+import com.netty.client.handler.FillProxyHandler;
 import com.netty.client.handler.FillWebSocketProxyHandler;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.Channel;
@@ -14,18 +17,21 @@ import io.netty.handler.codec.http.HttpServerCodec;
 import io.netty.handler.logging.LogLevel;
 import io.netty.handler.logging.LoggingHandler;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @Slf4j
 @Component
 public class ProxyClientEntry {
 
+    @Autowired
+    private AppConfig appConfig;
+
     /**
      * 启动客户端，初始化连接并设置默认处理器链。
      * @throws Exception 网络连接或初始化时的异常
      */
     public void start(int localPort, String remoteHost, int remotePort) throws Exception {
-//        CertificateProvider.buildRootSslFile();
 
         EventLoopGroup bossGroup = new NioEventLoopGroup();
         EventLoopGroup workerGroup = new NioEventLoopGroup();
@@ -45,8 +51,13 @@ public class ProxyClientEntry {
                             p.addLast(new HttpServerCodec());
                             // HTTP消息聚合处理器，避免半包问题
                             p.addLast(new HttpObjectAggregator(maxContentLength));
-//                            p.addLast(new FillProxyHandler(remoteHost, remotePort));
-                            p.addLast(new FillWebSocketProxyHandler(remoteHost, remotePort));
+                            if (ProxyReqEnum.parse(appConfig.getProxyType()).equals(ProxyReqEnum.HTTP)) {
+                                p.addLast(new FillProxyHandler(remoteHost, remotePort, appConfig));
+                            }else if (ProxyReqEnum.parse(appConfig.getProxyType()).equals(ProxyReqEnum.WEBSOCKET)) {
+                                p.addLast(new FillWebSocketProxyHandler(remoteHost, remotePort, appConfig));
+                            }else {
+                                log.error("请检查配置, 不支持的代理类型: {}", appConfig.getProxyType());
+                            }
                         }
                     });
 

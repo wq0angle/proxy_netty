@@ -23,4 +23,7 @@ public class AppConfig {
 
     @Value("${ssl.request.enabled}")
     private Boolean sslRequestEnabled;
+
+    @Value("${proxy.type}")
+    private String proxyType;
 }

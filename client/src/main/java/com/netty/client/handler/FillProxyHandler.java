@@ -1,5 +1,6 @@
 package com.netty.client.handler;
 
+import com.netty.client.config.AppConfig;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.*;
 import io.netty.channel.socket.SocketChannel;
@@ -19,10 +20,12 @@ public class FillProxyHandler extends SimpleChannelInboundHandler<FullHttpReques
     private final String remoteHost;
     private final int remotePort;
     private final SslContext sslContext;
+    private AppConfig appConfig;
 
-    public FillProxyHandler(String remoteHost, int remotePort) throws Exception {
+    public FillProxyHandler(String remoteHost, int remotePort, AppConfig appConfig) throws Exception {
         this.remoteHost = remoteHost;
         this.remotePort = remotePort;
+        this.appConfig = appConfig;
         this.sslContext = SslContextBuilder.forClient()
                 .protocols("TLSv1.1", "TLSv1.2", "TLSv1.3")
                 .ciphers(null)  // 默认使用所有可用的加密套件
@@ -32,7 +35,7 @@ public class FillProxyHandler extends SimpleChannelInboundHandler<FullHttpReques
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, FullHttpRequest request) throws Exception {
         if (request.method() == HttpMethod.CONNECT) {
-            log.info("Received CONNECT request: {}", request.uri());
+            log.debug("Received CONNECT request: {}", request.uri());
             handleConnect(ctx, request);
         } else {
             // 直接转发其他请求
@@ -66,7 +69,9 @@ public class FillProxyHandler extends SimpleChannelInboundHandler<FullHttpReques
                     @Override
                     protected void initChannel(SocketChannel ch) throws Exception {
                         // 仅添加用于转发的handler
-//                        ch.pipeline().addLast(sslContext.newHandler(ch.alloc(), remoteHost, remotePort)); // 添加 SSL 处理器
+                        if (appConfig.getSslRequestEnabled()) {
+                            ch.pipeline().addLast(sslContext.newHandler(ch.alloc(), remoteHost, remotePort)); // 添加 SSL 处理器
+                        }
                         ch.pipeline().addLast(new LoggingHandler(LogLevel.INFO)); // 添加日志处理器，输出 SSL 握手过程中的详细信息
                         ch.pipeline().addLast(new HttpClientCodec());
                         ch.pipeline().addLast(new HttpObjectAggregator(maxContentLength));
@@ -83,14 +88,15 @@ public class FillProxyHandler extends SimpleChannelInboundHandler<FullHttpReques
                 future.channel().pipeline().remove(HttpClientCodec.class);
                 future.channel().pipeline().remove(HttpObjectAggregator.class);
 
-                //释放该请求的全局监听的http解析器,透明转发请求,在connect后面的请求彻底转换为SSL隧道的TCP通信模式
+                //释放该请求的全局监听的http解析器,不再解析TCP流并透明转发,在connect后面的请求后转换为SSL隧道模式
                 ctx.pipeline().remove(HttpServerCodec.class);
                 ctx.pipeline().remove(HttpObjectAggregator.class);
-                ctx.pipeline().remove(this.getClass());  // 移除当前处理器
 
+                //流处理器替换
+                ctx.pipeline().remove(this.getClass());  // 移除当前处理器
                 ctx.pipeline().addLast(new RelayHandler(future.channel()));  // 添加用于转发的handler
 
-                log.info("send connect request to post");
+                log.debug("send connect request to post , {}",host);
             } else {
                 ctx.writeAndFlush(new DefaultFullHttpResponse(
                         HttpVersion.HTTP_1_1, HttpResponseStatus.INTERNAL_SERVER_ERROR));
@@ -101,7 +107,7 @@ public class FillProxyHandler extends SimpleChannelInboundHandler<FullHttpReques
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
         if (cause instanceof IOException && cause.getMessage().contains("Connection reset")) {
-            log.info("Connection was reset by the peer");
+            log.debug("Connection was reset by the peer");
         } else {
             log.error("Error occurred in FillProxyHandler", cause);
         }
