@@ -26,4 +26,7 @@ public class AppConfig {
 
     @Value("${proxy.type}")
     private String proxyType;
+
+    @Value("${windows.proxy.enabled}")
+    private Boolean windowsProxyEnabled;
 }

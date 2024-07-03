@@ -23,7 +23,9 @@ public class ProxyClientConfig {
 
     @Bean
     public String startServerHandler() throws Exception {
-//        addWindowsConfigEntry();
+        if (appConfig.getWindowsProxyEnabled()) {
+            addWindowsConfigEntry();
+        }
         addProxyClientEntry();
 
         return "附加服务执行完毕";
