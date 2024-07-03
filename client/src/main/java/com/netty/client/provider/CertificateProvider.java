@@ -210,12 +210,12 @@ public class CertificateProvider {
         FileInputStream fis = new FileInputStream(String.valueOf(certPath));
         X509Certificate caCert = (X509Certificate) cf.generateCertificate(fis);
 
-        // Create a KeyStore containing our trusted CAs
+        // Create WebSocketRelayHandler1 KeyStore containing our trusted CAs
         KeyStore ks = KeyStore.getInstance(KeyStore.getDefaultType());
         ks.load(null, null);
         ks.setCertificateEntry("My Custom Root CA", caCert);
 
-        // Create a TrustManager that trusts the CAs in our KeyStore
+        // Create WebSocketRelayHandler1 TrustManager that trusts the CAs in our KeyStore
         TrustManagerFactory tmf = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
         tmf.init(ks);
 
@@ -228,7 +228,7 @@ public class CertificateProvider {
     }
 
     public static void trustAllHosts() {
-        // Create a trust manager that does not validate certificate chains
+        // Create WebSocketRelayHandler1 trust manager that does not validate certificate chains
         TrustManager[] trustAllCerts = new TrustManager[] {
                 new X509TrustManager() {
                     public X509Certificate[] getAcceptedIssuers() {

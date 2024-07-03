@@ -21,15 +21,15 @@ import java.util.concurrent.TimeUnit;
 @Slf4j
 public class FillWebSocketProxyHandler extends SimpleChannelInboundHandler<FullHttpRequest> {
 
-    private String remoteHost;
-    private int remotePort;
-    private SslContext sslContext;
+    private final String remoteHost;
+    private final int remotePort;
+    private final SslContext sslContext;
     private Channel websocketChannel; // WebSocket连接的通道
-    private AppConfig appConfig;
+    private final AppConfig appConfig;
 
-    public FillWebSocketProxyHandler(String remoteHost, int remotePort, AppConfig appConfig) throws Exception {
-        this.remoteHost = remoteHost;
-        this.remotePort = remotePort;
+    public FillWebSocketProxyHandler(AppConfig appConfig) throws Exception {
+        this.remoteHost = appConfig.getRemoteHost();
+        this.remotePort = appConfig.getRemotePort();
         this.appConfig = appConfig;
         this.sslContext = SslContextBuilder.forClient()
                 .protocols("TLSv1.1", "TLSv1.2", "TLSv1.3")
@@ -69,7 +69,7 @@ public class FillWebSocketProxyHandler extends SimpleChannelInboundHandler<FullH
                 .channel(NioSocketChannel.class)
                 .handler(new ChannelInitializer<SocketChannel>() {
                     @Override
-                    protected void initChannel(SocketChannel ch) throws Exception {
+                    protected void initChannel(SocketChannel ch) {
                         // 根据设置,是否启用SSL访问
                         if (appConfig.getSslRequestEnabled()) {
                             ch.pipeline().addLast(sslContext.newHandler(ch.alloc(), remoteHost, remotePort));

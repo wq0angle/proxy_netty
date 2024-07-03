@@ -17,59 +17,37 @@ import java.nio.charset.StandardCharsets;
 
 @Slf4j
 @ChannelHandler.Sharable
-public class WebSocketRelayHandler extends ChannelDuplexHandler {
+public class WebSocketRelayHandler1 extends ChannelDuplexHandler {
 
-    private final WebSocketClientHandshaker handshaker;
-
-    private ChannelPromise handshakeFuture;
 
     private final Channel inboundChannel;
 
     private final ChannelFlowEnum channelFlow;
 
-    public WebSocketRelayHandler(WebSocketClientHandshaker handshaker, Channel inboundChannel, ChannelFlowEnum channelFlow) {
-        this.handshaker = handshaker;
+    public WebSocketRelayHandler1(Channel inboundChannel, ChannelFlowEnum channelFlow) {
         this.inboundChannel = inboundChannel;
         this.channelFlow = channelFlow;
     }
 
-    public ChannelFuture handshakeFuture() {
-        return handshakeFuture;
-    }
-
     @Override
     public void handlerAdded(ChannelHandlerContext ctx) {
-        handshakeFuture = ctx.newPromise();
+
     }
 
     @Override
     public void channelActive(ChannelHandlerContext ctx) {
-        log.debug("channelActive, 进行handshake");
-        handshaker.handshake(ctx.channel());
+
+
     }
 
     @Override
     public void channelInactive(ChannelHandlerContext ctx) {
 //        log.info("当前通道不再活跃!");
-//        if (inboundChannel != null && inboundChannel.isActive()) {
-//            inboundChannel.close();
-//        }
+
     }
 
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) {
-        Channel ch = ctx.channel();
-        if (!handshaker.isHandshakeComplete()) {
-            try {
-                handshaker.finishHandshake(ch, (FullHttpResponse) msg);
-                log.debug("websocket Handshake 完成!");
-                handshakeFuture.setSuccess();
-            } catch (WebSocketHandshakeException e) {
-                log.info("websocket连接失败!");
-                handshakeFuture.setFailure(e);
-            }
-            return;
-        }
         /*
           调试状态下需要理清channel的角色关系，在转为透明代理模式下, 存在两个流处理器进行数据交互,主要点在于两个不同的channel(ctx.channel和inboundChannel)
           ctx.channel和inboundChannel分别对应local和future的channel,但随着数据通道流向不同,其对应的角色会转变
@@ -102,7 +80,7 @@ public class WebSocketRelayHandler extends ChannelDuplexHandler {
                     content.writeBytes(text.getBytes(StandardCharsets.UTF_8));
                     ctx.writeAndFlush(content);
                 } else {
-                    super.write(ctx, msg, promise);
+                    super.write(ctx, frame, promise);
                 }
             }
             case ByteBuf data -> {
@@ -122,20 +100,8 @@ public class WebSocketRelayHandler extends ChannelDuplexHandler {
         } else {
             log.error("Error occurred in WebSocketRelayHandler,channelFlow:{}", channelFlow.getMsg(), cause);
         }
-        // 异常处理
-        if (!handshakeFuture.isDone()) {
-            handshakeFuture.setFailure(cause);
-        }
         ctx.close();
     }
-
-//    private static String bytesToHex(byte[] bytes) {
-//        StringBuilder sb = new StringBuilder();
-//        for (byte b : bytes) {
-//            sb.append(String.format("%02x", b)).append(", ");
-//        }
-//        return sb.toString();
-//    }
 
     @Override
     public void userEventTriggered(ChannelHandlerContext ctx, Object evt) {

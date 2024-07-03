@@ -16,6 +16,9 @@ import java.nio.file.Files;
 @Component
 public class WebsiteServerHandler {
 
+    /**
+     * 启动静态网站服务
+     */
     @Async
     public void start(String ipAddress,Integer port,String websiteDirectory) throws IOException {
 

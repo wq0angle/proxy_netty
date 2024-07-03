@@ -37,6 +37,7 @@ public class ProxyServerHandler{
         EventLoopGroup bossGroup = new NioEventLoopGroup();
         EventLoopGroup workerGroup = new NioEventLoopGroup();
         Integer maxContentLength = 1024 * 1024 * 10; //设置最大响应体大小 10M
+        // 目录文件中获取sslContextMap
         Map<String,SslContext> sslContextMap;
         if (appConfig.getSslListenerEnabled()) {
             sslContextMap = SslContextProvider.mapSslContext(appConfig.getSslJksPath(), appConfig.getSslJksFilePassword());

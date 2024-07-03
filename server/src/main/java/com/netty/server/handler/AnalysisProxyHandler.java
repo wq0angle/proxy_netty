@@ -64,6 +64,8 @@ public class AnalysisProxyHandler extends SimpleChannelInboundHandler<FullHttpRe
                     // 移除HTTP处理器并设置透明转发
                     ctx.pipeline().remove(HttpServerCodec.class);
                     ctx.pipeline().remove(HttpObjectAggregator.class);
+
+                    // 流处理器替换
                     ctx.pipeline().remove(this.getClass());  // 移除当前处理器
                     ctx.pipeline().addLast(new RelayHandler(future.channel()));  // 添加用于转发的handler
                 }else {

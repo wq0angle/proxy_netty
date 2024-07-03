@@ -1,6 +1,7 @@
 package com.netty.client.entry;
 
 import com.netty.client.config.AppConfig;
+import com.netty.client.handler.FillWebSocketProxyHandler1;
 import com.netty.common.enums.ProxyReqEnum;
 import com.netty.client.handler.FillProxyHandler;
 import com.netty.client.handler.FillWebSocketProxyHandler;
@@ -55,7 +56,8 @@ public class ProxyClientEntry {
                             if (ProxyReqEnum.parse(appConfig.getProxyType()).equals(ProxyReqEnum.HTTP)) {
                                 p.addLast(new FillProxyHandler(remoteHost, remotePort, appConfig));
                             }else if (ProxyReqEnum.parse(appConfig.getProxyType()).equals(ProxyReqEnum.WEBSOCKET)) {
-                                p.addLast(new FillWebSocketProxyHandler(remoteHost, remotePort, appConfig));
+//                                p.addLast(new FillWebSocketProxyHandler(remoteHost, remotePort, appConfig));
+                                p.addLast(new FillWebSocketProxyHandler1(appConfig));
                             }else {
                                 log.error("请检查配置, 不支持的代理类型: {}", appConfig.getProxyType());
                             }

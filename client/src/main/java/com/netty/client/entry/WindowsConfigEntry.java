@@ -26,6 +26,7 @@ public class WindowsConfigEntry {
         }
     }
 
+    //程序关闭自动调用
     @PreDestroy
     public void disableProxy() {
         try {
