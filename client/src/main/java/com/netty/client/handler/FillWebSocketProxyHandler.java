@@ -1,6 +1,7 @@
 package com.netty.client.handler;
 
 import com.netty.client.config.AppConfig;
+import com.netty.common.enums.ChannelFlowEnum;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.*;
 import io.netty.channel.socket.SocketChannel;
@@ -52,6 +53,7 @@ public class FillWebSocketProxyHandler extends SimpleChannelInboundHandler<FullH
     WebSocketClientHandshaker handshaker;
     private void handleConnect(ChannelHandlerContext ctx, FullHttpRequest request) throws URISyntaxException {
         String wsUri;
+        // 根据设置，websocket握手是否启用SSL访问
         if (appConfig.getSslRequestEnabled()) {
             wsUri = "wss://";
         }else {
@@ -60,7 +62,7 @@ public class FillWebSocketProxyHandler extends SimpleChannelInboundHandler<FullH
         URI uri = new URI(wsUri + remoteHost + ":" + remotePort + "/websocket");
         handshaker = WebSocketClientHandshakerFactory
                 .newHandshaker(uri, WebSocketVersion.V13, null, false, new DefaultHttpHeaders());
-        WebSocketRelayHandler webSocketRelayHandler = new WebSocketRelayHandler(handshaker, ctx.channel(), 1);
+        WebSocketRelayHandler webSocketRelayHandler = new WebSocketRelayHandler(handshaker, ctx.channel(), ChannelFlowEnum.LOCAL_CHANNEL_FLOW);
 
         Bootstrap b = new Bootstrap();
         b.group(ctx.channel().eventLoop())
@@ -68,6 +70,7 @@ public class FillWebSocketProxyHandler extends SimpleChannelInboundHandler<FullH
                 .handler(new ChannelInitializer<SocketChannel>() {
                     @Override
                     protected void initChannel(SocketChannel ch) throws Exception {
+                        // 根据设置,是否启用SSL访问
                         if (appConfig.getSslRequestEnabled()) {
                             ch.pipeline().addLast(sslContext.newHandler(ch.alloc(), remoteHost, remotePort));
                         }
@@ -117,7 +120,7 @@ public class FillWebSocketProxyHandler extends SimpleChannelInboundHandler<FullH
 
             //流处理器替换
             removeCheckHttpHandler(ctx.pipeline(), this.getClass()); //移除当前处理器
-            ctx.channel().pipeline().addLast(new WebSocketRelayHandler(handshaker, websocketChannel,2));
+            ctx.channel().pipeline().addLast(new WebSocketRelayHandler(handshaker, websocketChannel,ChannelFlowEnum.FUTURE_CHANNEL_FLOW));
         }
     }
 

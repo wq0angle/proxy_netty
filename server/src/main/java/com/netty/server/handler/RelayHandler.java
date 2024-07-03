@@ -38,7 +38,7 @@ public class RelayHandler extends ChannelInboundHandlerAdapter {
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
         if (cause instanceof IOException && cause.getMessage().contains("Connection reset")) {
-            log.info("Connection was reset by the peer");
+            log.debug("Connection was reset by the peer");
         } else {
             log.error("Error occurred in RelayHandler", cause);
         }

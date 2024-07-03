@@ -1,5 +1,6 @@
 package com.netty.server.handler;
 
+import com.netty.common.enums.ChannelFlowEnum;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.*;
 import io.netty.channel.socket.SocketChannel;
@@ -34,7 +35,7 @@ public class AnalysisWebSocketProxyHandler extends SimpleChannelInboundHandler<W
                     protected void initChannel(SocketChannel ch) {
                         // 仅添加用于转发的handler,代理服务端无需SSL处理，因为握手过程处理交由代理客户端处理
 //                        ch.pipeline().addLast(new LoggingHandler(LogLevel.INFO));
-                        ch.pipeline().addLast(new FramePackRelayHandler(ctx.channel(),1));
+                        ch.pipeline().addLast(new FramePackRelayHandler(ctx.channel(), ChannelFlowEnum.LOCAL_CHANNEL_FLOW));
                     }
                 });
 
@@ -54,8 +55,10 @@ public class AnalysisWebSocketProxyHandler extends SimpleChannelInboundHandler<W
                     // 移除HTTP处理器并设置透明转发
                     removeCheckHttpHandler(ctx, HttpServerCodec.class);
                     removeCheckHttpHandler(ctx, HttpObjectAggregator.class);
+
+                    // 流处理器替换
                     removeCheckHttpHandler(ctx, this.getClass());  // 移除当前处理器
-                    ctx.pipeline().addLast(new FramePackRelayHandler(future.channel(),2));
+                    ctx.pipeline().addLast(new FramePackRelayHandler(future.channel(),ChannelFlowEnum.FUTURE_CHANNEL_FLOW));
 
             } else {
                 // 连接失败，向客户端发送 500 错误
@@ -79,11 +82,11 @@ public class AnalysisWebSocketProxyHandler extends SimpleChannelInboundHandler<W
             Integer port = urlArr.length > 1 ? Integer.parseInt(urlArr[1]) : 80;
             handleHttpRequest(ctx, host, port);
         } else if (frame instanceof BinaryWebSocketFrame) {
-            log.info("WebSocket Frame: {}", frame.content().toString(CharsetUtil.UTF_8));
+            log.debug("WebSocket Frame: {}", frame.content().toString(CharsetUtil.UTF_8));
         } else if (frame instanceof CloseWebSocketFrame) {
             ctx.close();
         } else if (frame instanceof PingWebSocketFrame) {
-            log.info("WebSocket Frame: {}", frame.content().toString(CharsetUtil.UTF_8));
+            log.debug("WebSocket Frame: {}", frame.content().toString(CharsetUtil.UTF_8));
             ctx.writeAndFlush(new PongWebSocketFrame(frame.content().retain()));
         } else if (frame instanceof PongWebSocketFrame) {
             // Pong frames are ignored
@@ -116,7 +119,7 @@ public class AnalysisWebSocketProxyHandler extends SimpleChannelInboundHandler<W
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
         if (cause instanceof IOException && cause.getMessage().contains("Connection reset")) {
-            log.info("Connection was reset by the peer");
+            log.debug("Connection was reset by the peer");
         } else {
             log.error("Error occurred in AnalysisWebSocketProxyHandler", cause);
         }
@@ -130,7 +133,7 @@ public class AnalysisWebSocketProxyHandler extends SimpleChannelInboundHandler<W
     @Override
     public void channelInactive(ChannelHandlerContext ctx) {
         if (ctx.channel().isActive()) {
-            log.info("server ip : [{}] disconnected", ctx.channel().remoteAddress());
+            log.debug("server ip : [{}] disconnected", ctx.channel().remoteAddress());
             ctx.close();
         }
     }
@@ -142,7 +145,7 @@ public class AnalysisWebSocketProxyHandler extends SimpleChannelInboundHandler<W
      */
     @Override
     public void handlerAdded(ChannelHandlerContext ctx) {
-        log.info("handlerAdded | server ip : [{}] connected", ctx.channel().remoteAddress());
+        log.debug("handlerAdded | server ip : [{}] connected", ctx.channel().remoteAddress());
     }
 
     /**

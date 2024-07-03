@@ -1,7 +1,7 @@
 package com.netty.client.entry;
 
 import com.netty.client.config.AppConfig;
-import com.netty.client.enums.ProxyReqEnum;
+import com.netty.common.enums.ProxyReqEnum;
 import com.netty.client.handler.FillProxyHandler;
 import com.netty.client.handler.FillWebSocketProxyHandler;
 import io.netty.bootstrap.ServerBootstrap;
@@ -51,6 +51,7 @@ public class ProxyClientEntry {
                             p.addLast(new HttpServerCodec());
                             // HTTP消息聚合处理器，避免半包问题
                             p.addLast(new HttpObjectAggregator(maxContentLength));
+                            // 根据设置,选择代理请求类型
                             if (ProxyReqEnum.parse(appConfig.getProxyType()).equals(ProxyReqEnum.HTTP)) {
                                 p.addLast(new FillProxyHandler(remoteHost, remotePort, appConfig));
                             }else if (ProxyReqEnum.parse(appConfig.getProxyType()).equals(ProxyReqEnum.WEBSOCKET)) {

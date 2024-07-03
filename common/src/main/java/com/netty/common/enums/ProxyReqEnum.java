@@ -1,4 +1,4 @@
-package com.netty.client.enums;
+package com.netty.common.enums;
 
 
 public enum ProxyReqEnum {

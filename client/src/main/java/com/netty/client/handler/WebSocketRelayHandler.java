@@ -1,5 +1,6 @@
 package com.netty.client.handler;
 
+import com.netty.common.enums.ChannelFlowEnum;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.*;
@@ -21,12 +22,14 @@ public class WebSocketRelayHandler extends ChannelDuplexHandler  {
 
     private ChannelPromise handshakeFuture;
 
-    private Channel inboundChannel;
+    private final Channel inboundChannel;
 
-    public WebSocketRelayHandler(WebSocketClientHandshaker handshaker, Channel inboundChannel, Integer addCnt) {
+    private final ChannelFlowEnum channelFlow;
+
+    public WebSocketRelayHandler(WebSocketClientHandshaker handshaker, Channel inboundChannel, ChannelFlowEnum channelFlow) {
         this.handshaker = handshaker;
         this.inboundChannel = inboundChannel;
-        this.addCnt = addCnt;
+        this.channelFlow = channelFlow;
     }
 
     public ChannelFuture handshakeFuture() {
@@ -81,7 +84,6 @@ public class WebSocketRelayHandler extends ChannelDuplexHandler  {
         }
     }
 
-    private final Integer addCnt;
     @Override
     public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) throws Exception {
         switch (msg) {
@@ -105,8 +107,8 @@ public class WebSocketRelayHandler extends ChannelDuplexHandler  {
             case ByteBuf data -> {
 //                log.debug("TCP流转Websocket二进制帧,data:{}", data.toString(CharsetUtil.UTF_8));
                 WebSocketFrame frame = new BinaryWebSocketFrame(data);
-//                ctx.writeAndFlush(frame, promise);
-                super.write(ctx, msg, promise);
+                ctx.writeAndFlush(frame, promise);
+//                super.write(ctx, msg, promise);
             }
             case null, default -> super.write(ctx, msg, promise);
         }
@@ -117,7 +119,7 @@ public class WebSocketRelayHandler extends ChannelDuplexHandler  {
         if (cause instanceof IOException && cause.getMessage().contains("Connection reset")) {
             log.debug("Connection was reset by the peer");
         } else {
-            log.error("Error occurred in WebSocketRelayHandler", cause);
+            log.error("Error occurred in WebSocketRelayHandler,channelFlow:{}", channelFlow.getMsg(),cause);
         }
         // 异常处理
         if (!handshakeFuture.isDone()) {
