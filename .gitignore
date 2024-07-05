@@ -5,8 +5,19 @@
 *.ipr
 target/
 
+###project files##
+log/error/
+log/info/
+tls/
+.gitignore
+
 ### VS Code ###
 .vscode/
-/log/error/
-/log/info/
-/tls/
+
+### Android ###
+.gradle
+build/
+.DS_Store
+captures
+.externalNativeBuild
+.cxx
