@@ -1,4 +1,4 @@
-package com.netty.client_porxy;
+package com.netty.client_proxy;
 
 import org.junit.Test;
 

@@ -1,4 +1,4 @@
-package com.netty.client_porxy.ui.home;
+package com.netty.client_proxy.ui.home;
 
 import android.os.Bundle;
 import android.view.LayoutInflater;
@@ -8,7 +8,7 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
-import com.netty.client_porxy.databinding.FragmentHomeBinding;
+import com.netty.client_proxy.databinding.FragmentHomeBinding;
 
 public class HomeFragment extends Fragment {
 

@@ -1,4 +1,4 @@
-package com.netty.client_porxy.ui.slideshow;
+package com.netty.client_proxy.ui.slideshow;
 
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;

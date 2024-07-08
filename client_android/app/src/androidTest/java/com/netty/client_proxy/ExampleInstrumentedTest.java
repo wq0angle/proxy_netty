@@ -1,4 +1,4 @@
-package com.netty.client_porxy;
+package com.netty.client_proxy;
 
 import android.content.Context;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
@@ -19,6 +19,6 @@ public class ExampleInstrumentedTest {
     public void useAppContext() {
         // Context of the app under test.
         Context appContext = InstrumentationRegistry.getInstrumentation().getTargetContext();
-        assertEquals("com.netty.client_porxy", appContext.getPackageName());
+        assertEquals("com.netty.client_proxy", appContext.getPackageName());
     }
 }

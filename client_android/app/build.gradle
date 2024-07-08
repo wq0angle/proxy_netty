@@ -3,11 +3,11 @@ plugins {
 }
 
 android {
-    namespace 'com.netty.client_porxy'
+    namespace 'com.netty.client_proxy'
     compileSdk 34
 
     defaultConfig {
-        applicationId "com.netty.client_porxy"
+        applicationId "com.netty.client_proxy"
         minSdk 24
         targetSdk 34
         versionCode 1
@@ -31,6 +31,14 @@ android {
         dataBinding true
     }
 
+    packagingOptions {
+        // 忽略冲突文件
+//        exclude 'META-INF/INDEX.LIST'
+//        exclude 'META-INF/io.netty.versions.properties'
+        // 选择保留第一个找到的文件
+        pickFirst 'META-INF/INDEX.LIST'
+        exclude 'META-INF/io.netty.versions.properties'
+    }
 }
 
 dependencies {
@@ -42,7 +50,10 @@ dependencies {
     implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
     implementation 'androidx.navigation:navigation-fragment:2.7.7'
     implementation 'androidx.navigation:navigation-ui:2.7.7'
+    implementation 'org.projectlombok:lombok:1.18.30'
     testImplementation 'junit:junit:4.13.2'
     androidTestImplementation 'androidx.test.ext:junit:1.2.1'
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.6.1'
+    // 添加 Netty 依赖
+    implementation 'io.netty:netty-all:4.1.99.Final'
 }
