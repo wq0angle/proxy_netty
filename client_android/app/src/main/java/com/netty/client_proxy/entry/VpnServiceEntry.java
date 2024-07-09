@@ -4,6 +4,7 @@ import android.content.Intent;
 import android.net.VpnService;
 import android.os.ParcelFileDescriptor;
 import android.util.Log;
+import timber.log.Timber;
 
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -35,8 +36,8 @@ public class VpnServiceEntry extends VpnService {
                         sendDataToNetty(buffer, length);
                     }
                 }
-            } catch (IOException e) {
-                Log.e("VPN", "onStartCommand", e);
+            } catch (Exception e) {
+                Timber.tag("VPN").e(e, "onStartCommand");
             }
         });
         vpnThread.start();
@@ -54,8 +55,8 @@ public class VpnServiceEntry extends VpnService {
         try {
             socket = new Socket("127.0.0.1", 8888);
             outputStream = socket.getOutputStream();
-        } catch (IOException e) {
-            Log.e("VPN", "Failed to initialize socket connection", e);
+        } catch (Exception e) {
+            Timber.tag("VPN").e(e, "Failed to initialize socket connection");
         }
     }
 
@@ -64,8 +65,8 @@ public class VpnServiceEntry extends VpnService {
             try {
                 outputStream.write(data, 0, length);
                 outputStream.flush();
-            } catch (IOException e) {
-                Log.e("VPN", "Failed to send data", e);
+            } catch (Exception e) {
+                Timber.tag("VPN").e(e, "Failed to send data");
                 // 重新初始化连接
                 initializeSocketConnection();
             }
@@ -86,7 +87,7 @@ public class VpnServiceEntry extends VpnService {
                 socket.close();
             }
         } catch (IOException e) {
-            Log.e("VPN", "onDestroy", e);
+            Timber.tag("VPN").e(e, "onDestroy");
         }
     }
 }

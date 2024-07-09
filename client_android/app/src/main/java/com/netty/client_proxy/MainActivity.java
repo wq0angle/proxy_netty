@@ -14,7 +14,9 @@ import androidx.navigation.ui.NavigationUI;
 import com.google.android.material.navigation.NavigationView;
 import com.google.android.material.snackbar.Snackbar;
 import com.netty.client_proxy.databinding.ActivityMainBinding;
+import com.netty.client_proxy.entry.ProxyClientEntry;
 import com.netty.client_proxy.entry.VpnServiceEntry;
+import timber.log.Timber;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -26,6 +28,16 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
 
         setContentView(R.layout.activity_main);
+
+        ProxyClientEntry proxyClientEntry = new ProxyClientEntry();
+        Thread thread = new Thread(()-> {
+            try {
+                proxyClientEntry.start();
+            } catch (Exception e) {
+                Timber.e(e, "Error starting proxy client");
+            }
+        });
+        thread.start();
 
         // 获取按钮的引用
         Button startVpnButton = findViewById(R.id.startVpnButton);

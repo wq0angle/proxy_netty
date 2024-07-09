@@ -28,18 +28,21 @@
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:orientation="vertical"
+            android:gravity="bottom"
             android:padding="16dp">
 
         <Button
                 android:id="@+id/startVpnButton"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:layout_marginBottom="16dp"
                 android:text="@string/start_vpn"/>
 
         <Button
                 android:id="@+id/stopVpnButton"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:layout_marginBottom="16dp"
                 android:text="@string/stop_vpn"/>
     </LinearLayout>
 
