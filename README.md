@@ -26,7 +26,7 @@
 
 ### 3. websocket代理链
 
-#### 代理架构示意：client(wifi/vpn) <--tcp--> proxyClient <--websocket--> cdn <--websocket--> proxyServer <--tcp--> targetServer 
+#### 代理架构示意：client(wifi/vpn) <--tcp/http--> proxyClient <--websocket--> cdn <--websocket--> proxyServer <--tcp--> targetServer 
 
 #### 可以支持任意厂商的CDN，websocket建立帧传输通道，实现websocket帧与https加密的TCP流的互转，可以通过CDN线路传输数据，解决了传统https代理被cdn截断SSL握手并解密请求导致SSL隧道中断的问题，选择给力的CDN厂商，速度嘎嘎起飞，优点是线路加速会使访问速度加快，同时减少数据传输的速度损耗(在支持CDN的基础上还会透传SSL握手，减少代理需求的不必要的额外的HTTPS的握手次数及证书卸装载，当然，这是理论上的，实际上协议升级握手问题还没在代码层面实现优化)，缺点是逻辑复杂，可能存在意外的bug
 
