@@ -18,9 +18,13 @@
 
 ### 1. https远程单代理
 
+#### 代理架构示意：client(wifi/vpn) <--tcp/http--> proxyServer <--tcp--> targetServer 
+
 #### 本质是建立SSL隧道进行数据流的交互，可以实现wifi代理到远程服务端代理的直连，优点是简单快捷，缺点是不支持部分设备，比如部分手机不支持https代理，如果只是http代理，裸奔容易被封服务器，同时流量还容易被监控和拦截
 
 ### 2. https代理链
+
+#### 代理架构示意：client(wifi/vpn) <--tcp/http--> proxyClient <--tcp/http--> proxyServer <--tcp--> targetServer 
 
 #### 其实和 1. 差不多，但多了一层客户端，这样只需要启动客户端，在同局域网内设备都可以http方式wifi代理到客户端，客户端再转发原先的TCP流以https代理方式到服务端，优点是可以解决设备不支持的问题，缺点是使用比较繁琐，同时不支持CDN，部分购买的线路不太友好的服务器传输数据会很慢
 
