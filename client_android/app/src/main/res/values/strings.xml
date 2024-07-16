@@ -13,4 +13,5 @@
 
     <string name="start_vpn">启动VPN</string>
     <string name="stop_vpn">停止VPN</string>
+    <string name="test">测试</string>
 </resources>

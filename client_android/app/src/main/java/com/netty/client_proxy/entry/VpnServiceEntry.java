@@ -20,12 +20,18 @@ public class VpnServiceEntry extends VpnService {
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         setupVpn();
-
-        // 初始化Socket连接
-        initializeSocketConnection();
+        if (vpnInterface == null) {
+            Timber.tag("VPN").e("VPN 服务未启动");
+            stopSelf();  // 停止服务
+            return START_NOT_STICKY;
+        }
 
         vpnThread = new Thread(() -> {
             try {
+
+                // 初始化Socket连接
+                initializeSocketConnection();
+
                 FileInputStream in = new FileInputStream(vpnInterface.getFileDescriptor());
                 byte[] buffer = new byte[1500];
                 int length;
@@ -49,6 +55,9 @@ public class VpnServiceEntry extends VpnService {
         builder.addAddress("10.0.0.2", 24);
         builder.addRoute("0.0.0.0", 0);
         vpnInterface = builder.establish();
+        if (vpnInterface == null) {
+            Timber.tag("VPN").e("Failed to establish VPN");
+        }
     }
 
     private void initializeSocketConnection() {

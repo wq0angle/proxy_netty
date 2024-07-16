@@ -1,6 +1,7 @@
 package com.netty.client_proxy;
 
 import android.content.Intent;
+import android.net.VpnService;
 import android.os.Bundle;
 import android.view.Menu;
 import android.view.View;
@@ -16,6 +17,7 @@ import com.google.android.material.snackbar.Snackbar;
 import com.netty.client_proxy.databinding.ActivityMainBinding;
 import com.netty.client_proxy.entry.ProxyClientEntry;
 import com.netty.client_proxy.entry.VpnServiceEntry;
+import com.netty.client_proxy.test.ProxyReqMain;
 import timber.log.Timber;
 
 public class MainActivity extends AppCompatActivity {
@@ -26,6 +28,8 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        Timber.plant(new Timber.DebugTree());
 
         setContentView(R.layout.activity_main);
 
@@ -42,6 +46,15 @@ public class MainActivity extends AppCompatActivity {
         // 获取按钮的引用
         Button startVpnButton = findViewById(R.id.startVpnButton);
         Button stopVpnButton = findViewById(R.id.stopVpnButton);
+        Button startTestButton = findViewById(R.id.startTestButton);
+
+        //netty测试
+        startTestButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                ProxyReqMain.reqTest();
+            }
+        });
 
         // 设置启动VPN按钮的点击监听器
         startVpnButton.setOnClickListener(new View.OnClickListener() {
@@ -84,9 +97,28 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void startVpnService() {
-        // 实现启动VPN服务的逻辑
-        Intent intent = new Intent(this, VpnServiceEntry.class);
-        startService(intent);
+        Intent intent = VpnService.prepare(this);
+        if (intent != null) {
+            // 用户尚未授权，需要请求授权
+            startActivityForResult(intent, 0);
+        } else {
+            // 用户已经授权，可以直接启动服务
+            Intent serviceIntent = new Intent(this, VpnServiceEntry.class);
+            startService(serviceIntent);
+        }
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode == 0 && resultCode == RESULT_OK) {
+            // 用户授权成功，启动 VPN 服务
+            Intent serviceIntent = new Intent(this, VpnServiceEntry.class);
+            startService(serviceIntent);
+        } else {
+            // 用户拒绝授权或取消，可以适当处理
+            Timber.tag("VPN").e("VPN 授权取消");
+        }
     }
 
     private void stopVpnService() {

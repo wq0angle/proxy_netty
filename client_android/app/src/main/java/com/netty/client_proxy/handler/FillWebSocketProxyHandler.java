@@ -32,7 +32,7 @@ public class FillWebSocketProxyHandler extends SimpleChannelInboundHandler<FullH
         this.remotePort = appConfig.getRemotePort();
         this.appConfig = appConfig;
         this.sslContext = SslContextBuilder.forClient()
-                .protocols("TLSv1.1", "TLSv1.2", "TLSv1.3")
+                .protocols("TLSv1.1", "TLSv1.2")
                 .ciphers(null)  // 默认使用所有可用的加密套件
                 .build();
     }

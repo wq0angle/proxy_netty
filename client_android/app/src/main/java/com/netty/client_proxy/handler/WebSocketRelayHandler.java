@@ -46,7 +46,7 @@ public class WebSocketRelayHandler extends ChannelDuplexHandler {
 
     @Override
     public void channelActive(ChannelHandlerContext ctx) {
-        Timber.e("channelActive, 进行handshake");
+        Timber.d("channelActive, 进行handshake");
         handshaker.handshake(ctx.channel());
     }
 

@@ -5,7 +5,7 @@ import lombok.Data;
 @Data
 public class AppConfig {
 
-    private String remoteHost = "";
+    private String remoteHost = "www.wq0angle.online";
 
     private int remotePort = 443;
 
