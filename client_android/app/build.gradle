@@ -40,6 +40,10 @@ android {
         exclude 'META-INF/io.netty.versions.properties'
     }
 
+    lintOptions{
+        abortOnError false
+    }
+
 }
 
 

@@ -3,13 +3,15 @@ package com.netty.client_proxy.entry;
 import android.content.Intent;
 import android.net.VpnService;
 import android.os.ParcelFileDescriptor;
-import android.util.Log;
 import timber.log.Timber;
 
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.net.InetAddress;
 import java.net.Socket;
+import java.net.UnknownHostException;
+import java.nio.charset.StandardCharsets;
 
 public class VpnServiceEntry extends VpnService {
     private ParcelFileDescriptor vpnInterface = null;
@@ -72,6 +74,16 @@ public class VpnServiceEntry extends VpnService {
     private void sendDataToNetty(byte[] data, int length) {
         if (outputStream != null) {
             try {
+                // 检查是否是对端口443的连接尝试
+                if (isHttpsConnectionAttempt(data)) {
+                    // 构建CONNECT请求
+                    String connectRequest = buildConnectRequest(data);
+                    // 发送CONNECT请求
+                    outputStream.write(connectRequest.getBytes());
+                    outputStream.flush();
+                }
+
+                // 发送原始数据
                 outputStream.write(data, 0, length);
                 outputStream.flush();
             } catch (Exception e) {
@@ -81,6 +93,68 @@ public class VpnServiceEntry extends VpnService {
             }
         }
     }
+
+    private boolean isHttpsConnectionAttempt(byte[] data) {
+        // 检查数据长度是否足够包含基本的 IP 头部和 TCP 头部
+        if (data.length < 40) return false;  // IP 头部 (最小20字节) + TCP 头部 (最小20字节)
+
+        // 获取 IP 头部中的协议字段，确定是否是 TCP 协议
+        // IP 协议字段位于第10个字节，TCP 协议的值为 6
+        int protocol = data[9] & 0xFF;
+        if (protocol != 6) return false;  // 不是 TCP 协议
+
+        // 计算 IP 头部长度，IP 头部的第一个字节的低四位表示 IP 头部长度（单位为4字节）
+        int ipHeaderLength = (data[0] & 0x0F) * 4;
+        if (data.length < ipHeaderLength + 20) return false;  // 数据不足以包含完整的 TCP 头部
+
+        // 提取 TCP 头部中的目标端口，位于 IP 头部之后的第2和第3个字节
+        int destPort = ((data[ipHeaderLength + 2] & 0xFF) << 8) | (data[ipHeaderLength + 3] & 0xFF);
+
+        // 检查目标端口是否为 HTTPS 的默认端口 443
+        return destPort == 443;
+    }
+
+    private String buildConnectRequest(byte[] data) throws UnknownHostException {
+        String destinationIP = extractDestinationIP(data);
+        int destinationPort = extractDestinationPort(data);
+        String hostName = ipToHostName(destinationIP);  // 尝试将 IP 转换为域名
+
+        String requestData = new String(data, StandardCharsets.UTF_8);
+
+        // 构建 CONNECT 请求
+        return "CONNECT " + hostName + ":" + destinationPort + " HTTP/1.1\r\n" +
+                "Host: " + hostName + "\r\n\r\n";
+    }
+
+    private String ipToHostName(String ip) {
+        try {
+            InetAddress addr = InetAddress.getByName(ip);
+            String hostName = addr.getHostName();
+            if (hostName.equals(ip)) {
+                // 如果 getCanonicalHostName 返回的仍然是 IP 地址，则说明没有找到对应的域名
+                return ip;
+            }
+            return hostName;
+        } catch (UnknownHostException e) {
+            Timber.tag("VPN").w(e, "DNS查询IP未能获取域名,IP: %s", ip);
+            return ip;  // 在解析失败时回退到 IP 地址
+        }
+    }
+
+    private String extractDestinationIP(byte[] data) {
+        // IP 地址位于 IP 头部的第16到第19字节
+        return (data[16] & 0xFF) + "." +
+                (data[17] & 0xFF) + "." +
+                (data[18] & 0xFF) + "." +
+                (data[19] & 0xFF);
+    }
+
+    private int extractDestinationPort(byte[] data) {
+        // 假设 IP 头部长度为20字节（无选项字段）
+        return ((data[20 + 2] & 0xFF) << 8) | (data[20 + 3] & 0xFF);
+    }
+
+
 
     @Override
     public void onDestroy() {
