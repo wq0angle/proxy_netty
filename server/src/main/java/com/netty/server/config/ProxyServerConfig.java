@@ -36,7 +36,7 @@ public class ProxyServerConfig {
         String ipAddress = "127.0.0.1";
         int port =  appConfig.getWebsitePort();
         String websiteDirectory = appConfig.getWebsiteDirectory();
-        websiteServerHandler.start(ipAddress, port, websiteDirectory);
+        websiteServerHandler.start(ipAddress, port, websiteDirectory.trim());
     }
 
 }

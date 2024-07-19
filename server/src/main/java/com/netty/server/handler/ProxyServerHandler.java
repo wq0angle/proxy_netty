@@ -54,14 +54,15 @@ public class ProxyServerHandler{
                             ChannelPipeline p = ch.pipeline();
                             //添加sniHandler，根据域名添加对应证书到SSL解析器
                             if (appConfig.getSslListenerEnabled()) {
-                                p.addLast(SslContextProvider.getSniHandler(sslContextMap,appConfig.getSinDefaultFile()));
+                                String sinDefaultFile = appConfig.getSinDefaultFile();
+                                p.addLast(SslContextProvider.getSniHandler(sslContextMap,sinDefaultFile.trim()));
                             }
                             p.addLast(new LoggingHandler(LogLevel.DEBUG)); // 添加日志处理器，输出 SSL 握手过程中的详细信息
                             p.addLast(new HttpServerCodec());
                             p.addLast(new HttpObjectAggregator(maxContentLength));
                             p.addLast(new WebSocketServerProtocolHandler("/websocket"));
                             p.addLast(new AnalysisWebSocketProxyHandler());
-                            p.addLast(new AnalysisProxyHandler());
+                            p.addLast(new AnalysisProxyHandler(appConfig));
                         }
                     });
 

@@ -23,10 +23,13 @@ public class SslContextProvider {
         if (StringUtil.isNullOrEmpty(sslJksFilePassword)){
             throw new Exception("启用了SSL证书监听，sslJksFilePassword 配置不能为空");
         }
+        sslJksPath = sslJksPath.trim();
+
         Map<String,SslContext> sslContextMap = Maps.newHashMap();
         String[] sslJksFilePasswordArr = sslJksFilePassword.trim().split(",");
 
         for (String filePassword : sslJksFilePasswordArr) {
+            filePassword = filePassword.trim();
             if (filePassword.split(":").length != 2){
                 throw new Exception("sslJksFilePassword 配置格式错误，请检查");
             }

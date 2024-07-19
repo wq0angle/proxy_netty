@@ -7,17 +7,20 @@ import io.netty.channel.*;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.handler.codec.http.*;
+import io.netty.handler.codec.http.websocketx.WebSocketServerProtocolHandler;
 import io.netty.util.internal.StringUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @Slf4j
-@Component
 public class AnalysisProxyHandler extends SimpleChannelInboundHandler<FullHttpRequest> {
 
-    @Autowired
     private AppConfig appConfig;
+
+    public AnalysisProxyHandler(AppConfig appConfig) {
+        this.appConfig = appConfig;
+    }
 
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, FullHttpRequest request) {
@@ -31,6 +34,8 @@ public class AnalysisProxyHandler extends SimpleChannelInboundHandler<FullHttpRe
         }else {
             forwardRequest(request,targetConnect);
         }
+        removeCheckHttpHandler(ctx, WebSocketServerProtocolHandler.class);
+        removeCheckHttpHandler(ctx, AnalysisWebSocketProxyHandler.class);
         handleConnectRequest(ctx, request, targetConnect.getHost(), targetConnect.getPort());
     }
 
@@ -62,11 +67,11 @@ public class AnalysisProxyHandler extends SimpleChannelInboundHandler<FullHttpRe
 
                     ctx.writeAndFlush(response);
                     // 移除HTTP处理器并设置透明转发
-                    ctx.pipeline().remove(HttpServerCodec.class);
-                    ctx.pipeline().remove(HttpObjectAggregator.class);
+                    removeCheckHttpHandler(ctx, HttpServerCodec.class);
+                    removeCheckHttpHandler(ctx, HttpObjectAggregator.class);
 
                     // 流处理器替换
-                    ctx.pipeline().remove(this.getClass());  // 移除当前处理器
+                    removeCheckHttpHandler(ctx, this.getClass()); // 移除当前处理器
                     ctx.pipeline().addLast(new RelayHandler(future.channel()));  // 添加用于转发的handler
                 }else {
                     log.info("request body to target server");
@@ -109,5 +114,12 @@ public class AnalysisProxyHandler extends SimpleChannelInboundHandler<FullHttpRe
         }
         targetConnect.setHost(host);
         targetConnect.setPort(port);
+    }
+
+    private void removeCheckHttpHandler(ChannelHandlerContext ctx, Class<? extends ChannelHandler> clazz) {
+        if (ctx.pipeline().get(clazz) != null){
+            log.debug("remove check http handler");
+            ctx.pipeline().remove(clazz);
+        }
     }
 }
