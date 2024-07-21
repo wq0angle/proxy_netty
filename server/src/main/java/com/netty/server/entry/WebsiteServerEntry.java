@@ -28,8 +28,9 @@ public class WebsiteServerEntry {
             try {
                 String requestPath = exchange.getRequestURI().getPath();
                 //增加安全性检查，以防止目录遍历攻击,比如./xx 或 ../xx
-                File file = new File(Path.of(websiteDirectory).resolve(requestPath).normalize().toString());
-                if (!file.getPath().startsWith(websiteDirectory)) {
+                File file = new File(Path.of(websiteDirectory + requestPath).normalize().toString());
+                String filePth = file.getPath().replace("\\", "/");
+                if (!filePth.startsWith(websiteDirectory)) {
                     throw new SecurityException("Attempted directory traversal attack");
                 }
                 if (file.exists() && file.isFile()) {
