@@ -10,6 +10,7 @@ import java.io.File;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.file.Files;
+import java.nio.file.Path;
 
 @Slf4j
 @EnableAsync
@@ -17,23 +18,33 @@ import java.nio.file.Files;
 public class WebsiteServerEntry {
 
     /**
-     * 启动静态网站服务
+     * 启动静态网站服务(部署伪装网站, 应对流量嗅探并提高隐蔽性)
      */
     @Async
     public void start(String ipAddress,Integer port,String websiteDirectory) throws IOException {
 
         HttpServer server = HttpServer.create(new InetSocketAddress(ipAddress, port), 0);
         server.createContext("/", exchange -> {
-            String requestPath = exchange.getRequestURI().getPath();
-            File file = new File(websiteDirectory + requestPath);
-            if (file.exists() && file.isFile()) {
-                byte[] content = Files.readAllBytes(file.toPath());
-                exchange.sendResponseHeaders(200, content.length);
-                exchange.getResponseBody().write(content);
-            } else {
-                exchange.sendResponseHeaders(404, 0);
+            try {
+                String requestPath = exchange.getRequestURI().getPath();
+                //增加安全性检查，以防止目录遍历攻击,比如./xx 或 ../xx
+                File file = new File(Path.of(websiteDirectory).resolve(requestPath).normalize().toString());
+                if (!file.getPath().startsWith(websiteDirectory)) {
+                    throw new SecurityException("Attempted directory traversal attack");
+                }
+                if (file.exists() && file.isFile()) {
+                    byte[] content = Files.readAllBytes(file.toPath());
+                    exchange.sendResponseHeaders(200, content.length);
+                    exchange.getResponseBody().write(content);
+                } else {
+                    exchange.sendResponseHeaders(404, 0);
+                }
+            } catch (Exception e) {
+                log.error("Error handling request", e);
+                exchange.sendResponseHeaders(500, 0);
+            } finally {
+                exchange.close();
             }
-            exchange.close();
         });
         server.start();
 
