@@ -34,8 +34,6 @@ public class AnalysisProxyHandler extends SimpleChannelInboundHandler<FullHttpRe
         }else {
             forwardRequest(request,targetConnect);
         }
-        removeCheckHttpHandler(ctx, WebSocketServerProtocolHandler.class);
-        removeCheckHttpHandler(ctx, AnalysisWebSocketProxyHandler.class);
         handleConnectRequest(ctx, request, targetConnect.getHost(), targetConnect.getPort());
     }
 

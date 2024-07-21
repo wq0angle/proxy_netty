@@ -1,4 +1,4 @@
-package com.netty.server.handler;
+package com.netty.server.entry;
 
 import com.sun.net.httpserver.HttpServer;
 import lombok.extern.slf4j.Slf4j;
@@ -14,7 +14,7 @@ import java.nio.file.Files;
 @Slf4j
 @EnableAsync
 @Component
-public class WebsiteServerHandler {
+public class WebsiteServerEntry {
 
     /**
      * 启动静态网站服务

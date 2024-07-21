@@ -1,7 +1,7 @@
 package com.netty.server.config;
 
-import com.netty.server.handler.ProxyServerHandler;
-import com.netty.server.handler.WebsiteServerHandler;
+import com.netty.server.entry.ProxyServerEntry;
+import com.netty.server.entry.WebsiteServerEntry;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -10,10 +10,10 @@ import org.springframework.context.annotation.Configuration;
 public class ProxyServerConfig {
 
     @Autowired
-    WebsiteServerHandler websiteServerHandler;
+    WebsiteServerEntry websiteServerEntry;
 
     @Autowired
-    ProxyServerHandler proxyServerHandler;
+    ProxyServerEntry proxyServerEntry;
 
     @Autowired
     private AppConfig appConfig;
@@ -28,7 +28,7 @@ public class ProxyServerConfig {
 
     public void proxyServerHandler() throws Exception {
         int port = appConfig.getServerPort(); // 设置代理服务器端口号
-        proxyServerHandler.start(port);
+        proxyServerEntry.start(port);
     }
 
     public void websiteServerHandler() throws Exception {
@@ -36,7 +36,7 @@ public class ProxyServerConfig {
         String ipAddress = "127.0.0.1";
         int port =  appConfig.getWebsitePort();
         String websiteDirectory = appConfig.getWebsiteDirectory();
-        websiteServerHandler.start(ipAddress, port, websiteDirectory.trim());
+        websiteServerEntry.start(ipAddress, port, websiteDirectory.trim());
     }
 
 }

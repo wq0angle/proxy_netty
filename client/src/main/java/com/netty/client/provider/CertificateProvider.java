@@ -114,7 +114,8 @@ public class CertificateProvider {
                 KeyPair rootKeyPair = buildKeyPair();
                 X509Certificate rootCertificate = buildRootCertificate(rootKeyPair);
 
-                // 使用JcaPEMWriter将证书写入文件
+
+
                 try (JcaPEMWriter certWriter = new JcaPEMWriter(new FileWriter(certPath.toFile()));
                      JcaPEMWriter keyWriter = new JcaPEMWriter(new FileWriter(keyPath.toFile()))) {
                     certWriter.writeObject(rootCertificate);

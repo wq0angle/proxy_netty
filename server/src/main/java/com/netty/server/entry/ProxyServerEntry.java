@@ -1,7 +1,10 @@
-package com.netty.server.handler;
+package com.netty.server.entry;
 
 import com.beust.jcommander.internal.Maps;
 import com.netty.server.config.AppConfig;
+import com.netty.server.handler.AnalysisProxyHandler;
+import com.netty.server.handler.AnalysisWebSocketProxyHandler;
+import com.netty.server.handler.ProxyLoaderHandler;
 import com.netty.server.provider.SslContextProvider;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.Channel;
@@ -27,7 +30,7 @@ import java.util.concurrent.TimeUnit;
 @Slf4j
 @EnableAsync
 @Component
-public class ProxyServerHandler{
+public class ProxyServerEntry {
 
     @Autowired
     private AppConfig appConfig;
@@ -60,9 +63,10 @@ public class ProxyServerHandler{
                             p.addLast(new LoggingHandler(LogLevel.DEBUG)); // 添加日志处理器，输出 SSL 握手过程中的详细信息
                             p.addLast(new HttpServerCodec());
                             p.addLast(new HttpObjectAggregator(maxContentLength));
-                            p.addLast(new WebSocketServerProtocolHandler("/websocket"));
-                            p.addLast(new AnalysisWebSocketProxyHandler());
-                            p.addLast(new AnalysisProxyHandler(appConfig));
+//                            p.addLast(new WebSocketServerProtocolHandler("/websocket"));
+//                            p.addLast(new AnalysisWebSocketProxyHandler());
+//                            p.addLast(new AnalysisProxyHandler(appConfig));
+                            p.addLast(new ProxyLoaderHandler(appConfig));
                         }
                     });
 

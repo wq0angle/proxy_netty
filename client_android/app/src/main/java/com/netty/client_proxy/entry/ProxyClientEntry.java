@@ -43,7 +43,7 @@ public class ProxyClientEntry {
             b.group(bossGroup, workerGroup)
                     .channel(NioServerSocketChannel.class)
                     // 添加日志处理器
-                    .handler(new LoggingHandler(LogLevel.DEBUG))
+//                    .handler(new LoggingHandler(LogLevel.DEBUG))
                     .childHandler(new ChannelInitializer<SocketChannel>() {
                         @Override
                         protected void initChannel(@NotNull SocketChannel ch) throws Exception {
