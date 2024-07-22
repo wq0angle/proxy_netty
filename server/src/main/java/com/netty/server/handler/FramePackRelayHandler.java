@@ -13,18 +13,18 @@ import java.io.IOException;
 
 @Slf4j
 public class FramePackRelayHandler extends ChannelDuplexHandler {
-    private final Channel relayChannel;
+    private final Channel inboundChannel;
 
     private final ChannelFlowEnum channelFlowEnum;
 
-    public FramePackRelayHandler(Channel relayChannel, ChannelFlowEnum channelFlowEnum) {
-        this.relayChannel = relayChannel;
+    public FramePackRelayHandler(Channel inboundChannel, ChannelFlowEnum channelFlowEnum) {
+        this.inboundChannel = inboundChannel;
         this.channelFlowEnum = channelFlowEnum;
     }
 
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) {
-        if (relayChannel.isActive()) {
+        if (inboundChannel.isActive()) {
             /*
               调试状态下需要理清channel的角色关系，在转为透明代理模式下, 存在两个流处理器进行数据交互,主要点在于两个不同的channel(ctx.channel和inboundChannel)
               ctx.channel和inboundChannel分别对应local和future的channel,但随着数据通道流向不同,其对应的角色会转变
@@ -32,7 +32,7 @@ public class FramePackRelayHandler extends ChannelDuplexHandler {
               inboundChannel.writeAndFlush 会触发 local 或 future 的channel.writeAndFlush,也就是调用当前类重写的write方法
               而重写的write方法里的 ctx.channel() 也就是inboundChannel
             */
-            relayChannel.writeAndFlush(msg).addListener(ChannelFutureListener.CLOSE_ON_FAILURE);
+            inboundChannel.writeAndFlush(msg).addListener(ChannelFutureListener.CLOSE_ON_FAILURE);
         } else {
             ReferenceCountUtil.release(msg);
             ctx.channel().close();
