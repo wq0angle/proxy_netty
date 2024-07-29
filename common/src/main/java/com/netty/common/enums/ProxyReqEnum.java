@@ -3,7 +3,8 @@ package com.netty.common.enums;
 
 public enum ProxyReqEnum {
     HTTP(1, "http代理请求"),
-    WEBSOCKET(2, "websocket代理请求");
+    WEBSOCKET(2, "websocket代理请求"),
+    VPN(3, "vpn代理请求"),
     ;
     private final Integer code;
     private final String msg;

@@ -63,9 +63,6 @@ public class ProxyServerEntry {
                             p.addLast(new LoggingHandler(LogLevel.DEBUG)); // 添加日志处理器，输出 SSL 握手过程中的详细信息
                             p.addLast(new HttpServerCodec());
                             p.addLast(new HttpObjectAggregator(maxContentLength));
-//                            p.addLast(new WebSocketServerProtocolHandler("/websocket"));
-//                            p.addLast(new AnalysisWebSocketProxyHandler());
-//                            p.addLast(new AnalysisProxyHandler(appConfig));
                             p.addLast(new ProxyLoaderHandler(appConfig));
                         }
                     });

@@ -6,7 +6,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.util.prefs.Preferences;
 
 @Component
@@ -35,6 +37,48 @@ public class WindowsConfigEntry {
             log.info("系统代理注册表设置，关闭代理");
         } catch (IOException e) {
             log.error("系统代理注册表关闭设置失败", e);
+        }
+    }
+
+    public void enableVPN(String vpnName, String username, String password) {
+        try {
+            String command = String.format("rasdial \"%s\" %s %s", vpnName, username, password);
+            Process process = Runtime.getRuntime().exec(command);
+
+            // 读取输出流
+            BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
+            String line;
+            StringBuilder output = new StringBuilder();
+            while ((line = reader.readLine()) != null) {
+                output.append(line).append("\n");
+            }
+
+            int exitCode = process.waitFor();
+            log.info("VPN 系统注册表开启命令执行->vpnName:{},username:{},password:{},执行结果:{}, 输出:{}",
+                    vpnName, username, password, exitCode, output.toString());
+        } catch (Exception e) {
+            log.error("VPN 系统注册表开启失败", e);
+        }
+    }
+
+    public void disableVPN(String vpnName) {
+        try {
+            String command = String.format("rasdial \"%s\" /DISCONNECT", vpnName);
+            Process process = Runtime.getRuntime().exec(command);
+
+            // 读取输出流
+            BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
+            String line;
+            StringBuilder output = new StringBuilder();
+            while ((line = reader.readLine()) != null) {
+                output.append(line).append("\n");
+            }
+
+            int exitCode = process.waitFor();
+            log.info("VPN 系统注册表关闭命令执行->vpnName:{},执行结果:{}, 输出:{}",
+                    vpnName, exitCode, output.toString());
+        } catch (Exception e) {
+            log.error("VPN 系统注册表关闭失败", e);
         }
     }
 }

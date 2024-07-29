@@ -16,7 +16,7 @@ import org.springframework.stereotype.Component;
 @Slf4j
 public class AnalysisProxyHandler extends SimpleChannelInboundHandler<FullHttpRequest> {
 
-    private AppConfig appConfig;
+    private final AppConfig appConfig;
 
     public AnalysisProxyHandler(AppConfig appConfig) {
         this.appConfig = appConfig;

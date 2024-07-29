@@ -11,9 +11,12 @@ import io.netty.handler.codec.http.websocketx.WebSocketFrame;
 import io.netty.handler.codec.http.websocketx.WebSocketServerProtocolHandler;
 import lombok.extern.slf4j.Slf4j;
 
+import java.nio.Buffer;
+
 @Slf4j
 public class ProxyLoaderHandler extends SimpleChannelInboundHandler<Object> {
-    private AppConfig appConfig;
+
+    private final AppConfig appConfig;
 
     public ProxyLoaderHandler(AppConfig appConfig) {
         this.appConfig = appConfig;
@@ -22,6 +25,7 @@ public class ProxyLoaderHandler extends SimpleChannelInboundHandler<Object> {
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, Object msg) throws Exception {
         switch (msg) {
+            // FullHttpRequest类型(包含http/https/websocket握手)
             case FullHttpRequest request:
                 // 检查是否是WebSocket握手请求
                 if (isWebSocketUpgradeRequest(request)) {
@@ -34,8 +38,12 @@ public class ProxyLoaderHandler extends SimpleChannelInboundHandler<Object> {
                 }
                 ctx.fireChannelRead(request.retain()); // 增加引用计数并继续传递
                 break;
-            /**
-             * 目前只有http监听请求,后面尝试增加vpn入口监听及vpn的tcp代理
+            // 字节类型,一般为vpn代理的TCP数据
+            case Buffer buffer:
+
+                break;
+            /*
+              目前只有http监听请求,后面尝试增加vpn入口监听及vpn的tcp代理
              */
             default:
                 log.error("ProxyLoaderHandler error");

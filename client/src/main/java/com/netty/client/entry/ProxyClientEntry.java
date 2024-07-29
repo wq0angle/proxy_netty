@@ -2,6 +2,7 @@ package com.netty.client.entry;
 
 import com.netty.client.config.AppConfig;
 import com.netty.client.handler.FillWebSocketProxyHandler1;
+import com.netty.client.handler.FillWebSocketVpnHandler;
 import com.netty.common.enums.ProxyReqEnum;
 import com.netty.client.handler.FillProxyHandler;
 import com.netty.client.handler.FillWebSocketProxyHandler;
@@ -48,17 +49,22 @@ public class ProxyClientEntry {
                         @Override
                         protected void initChannel(SocketChannel ch) throws Exception {
                             ChannelPipeline p = ch.pipeline();
-                            // HTTP编码处理器
-                            p.addLast(new HttpServerCodec());
-                            // HTTP消息聚合处理器，避免半包问题
-                            p.addLast(new HttpObjectAggregator(maxContentLength));
                             // 根据设置,选择代理请求类型
                             if (ProxyReqEnum.parse(appConfig.getProxyType()).equals(ProxyReqEnum.HTTP)) {
+                                // HTTP编码处理器
+                                p.addLast(new HttpServerCodec());
+                                // HTTP消息聚合处理器，避免半包问题
+                                p.addLast(new HttpObjectAggregator(maxContentLength));
                                 p.addLast(new FillProxyHandler(remoteHost, remotePort, appConfig));
                             }else if (ProxyReqEnum.parse(appConfig.getProxyType()).equals(ProxyReqEnum.WEBSOCKET)) {
+                                p.addLast(new HttpServerCodec());
+                                p.addLast(new HttpObjectAggregator(maxContentLength));
                                 p.addLast(new FillWebSocketProxyHandler(appConfig));
 //                                p.addLast(new FillWebSocketProxyHandler1(appConfig));
-                            }else {
+                            }else if (ProxyReqEnum.parse(appConfig.getProxyType()).equals(ProxyReqEnum.VPN)) {
+                                p.addLast(new FillWebSocketVpnHandler(appConfig));
+                            }
+                            else {
                                 log.error("请检查配置, 不支持的代理类型: {}", appConfig.getProxyType());
                             }
                         }
