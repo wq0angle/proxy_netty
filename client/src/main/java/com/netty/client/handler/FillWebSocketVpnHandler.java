@@ -27,14 +27,14 @@ public class FillWebSocketVpnHandler extends SimpleChannelInboundHandler<ByteBuf
     protected void channelRead0(ChannelHandlerContext ctx, ByteBuf byteBuf) throws Exception {
         // 如果relayChannel尚未连接，则建立连接
         if (relayChannel == null || !relayChannel.isActive()) {
-            connectToRemoteServer(ctx);
+            connectToRemoteServer(ctx,byteBuf);
         } else {
             // 转发数据
             relayChannel.writeAndFlush(byteBuf.retain()); // 使用retain()以防止ByteBuf被释放
         }
     }
 
-    private void connectToRemoteServer(ChannelHandlerContext ctx) {
+    private void connectToRemoteServer(ChannelHandlerContext ctx,ByteBuf byteBuf) {
         EventLoopGroup group = new NioEventLoopGroup();
         try {
             Bootstrap bootstrap = new Bootstrap();
@@ -48,6 +48,7 @@ public class FillWebSocketVpnHandler extends SimpleChannelInboundHandler<ByteBuf
             relayChannel = future.channel(); // 保存远程连接的Channel
             future.addListener(f -> {
                 if (f.isSuccess()) {
+                    relayChannel.writeAndFlush(byteBuf.retain());
                     log.info("成功连接到远程服务器: {}:{}", remoteHost, remotePort);
                 } else {
                     log.error("连接到远程服务器失败: {}:{}", remoteHost, remotePort);

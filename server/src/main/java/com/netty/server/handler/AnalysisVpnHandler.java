@@ -15,21 +15,36 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class AnalysisVpnHandler extends SimpleChannelInboundHandler<ByteBuf> {
 
-    private final String targetHost;
-    private final int targetPort;
     private ChannelFuture targetChannelFuture;
-
-    public AnalysisVpnHandler(String targetHost, int targetPort) {
-        this.targetHost = targetHost;
-        this.targetPort = targetPort;
-    }
+    private String selectedProtocol;
 
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, ByteBuf byteBuf) throws Exception {
+        // 检查数据包长度
+        if (byteBuf.readableBytes() < 24) { // 假设最小长度
+            log.error("接收到的数据包长度不够，丢弃数据包");
+            return;
+        }
+
         // 假设数据包的前8个字节是目标主机和端口信息
-        // 这里需要根据实际数据包格式进行解析
-        String targetHost = extractDestinationIP(byteBuf.array());
-        int targetPort = extractDestinationPort(byteBuf.array());
+        byte[] data = new byte[byteBuf.readableBytes()];
+        byteBuf.getBytes(byteBuf.readerIndex(), data);
+
+        // 处理协议协商
+        if (selectedProtocol == null) {
+            handleProtocolNegotiation(ctx, data);
+            return;
+        }
+
+        // 处理身份验证
+        if (!isAuthenticated(ctx)) {
+            handleAuthentication(ctx, data);
+            return;
+        }
+
+        // 提取目标主机和端口
+        String targetHost = extractDestinationIP(data);
+        int targetPort = extractDestinationPort(data);
 
         // 如果目标通道未连接，则建立连接
         if (targetChannelFuture == null || !targetChannelFuture.channel().isActive()) {
@@ -38,6 +53,60 @@ public class AnalysisVpnHandler extends SimpleChannelInboundHandler<ByteBuf> {
             // 转发数据到目标服务器
             targetChannelFuture.channel().writeAndFlush(byteBuf.retain());
         }
+    }
+
+    private void handleProtocolNegotiation(ChannelHandlerContext ctx, byte[] data) {
+        // 假设data中包含客户端支持的协议列表
+        selectedProtocol = extractSupportedProtocols(data);
+        log.info("协商使用的协议: {}", selectedProtocol);
+
+        // 发送协议选择响应
+        ByteBuf response = ctx.alloc().buffer();
+        buildProtocolResponse(response, selectedProtocol);
+        ctx.writeAndFlush(response);
+    }
+
+    private String extractSupportedProtocols(byte[] data) {
+        // 解析data以提取客户端支持的协议
+        // 这里需要根据具体协议格式实现
+        return "L2TP"; // 示例，选择L2TP
+    }
+
+    private void buildProtocolResponse(ByteBuf response, String selectedProtocol) {
+        // 根据协议规范构造响应消息
+        // 这里需要根据具体协议格式实现
+        response.writeBytes(("Protocol: " + selectedProtocol).getBytes());
+    }
+
+    private boolean isAuthenticated(ChannelHandlerContext ctx) {
+        // 检查用户是否已通过身份验证
+        // 这里可以实现更复杂的逻辑
+        return false; // 示例中始终返回未认证
+    }
+
+    private void handleAuthentication(ChannelHandlerContext ctx, byte[] data) {
+        log.info("处理身份验证");
+        // 验证用户名和密码
+        if (isValidCredentials(data)) {
+            log.info("身份验证成功");
+            // 发送成功响应
+            ByteBuf response = ctx.alloc().buffer();
+            buildAuthenticationResponse(response);
+            ctx.writeAndFlush(response);
+        } else {
+            log.error("身份验证失败");
+            ctx.close(); // 关闭连接
+        }
+    }
+
+    private boolean isValidCredentials(byte[] data) {
+        // 验证逻辑
+        return true; // 示例中始终返回true
+    }
+
+    private void buildAuthenticationResponse(ByteBuf response) {
+        // 根据协议规范构造身份验证成功的响应
+        response.writeBytes("Authentication Success".getBytes());
     }
 
     private void connectToTargetServer(ChannelHandlerContext ctx, String targetHost, int targetPort) {

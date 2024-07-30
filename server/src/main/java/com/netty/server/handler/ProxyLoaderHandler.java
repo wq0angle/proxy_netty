@@ -1,17 +1,19 @@
 package com.netty.server.handler;
 
 import com.netty.server.config.AppConfig;
+import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
-import io.netty.handler.codec.http.FullHttpRequest;
-import io.netty.handler.codec.http.HttpHeaderNames;
-import io.netty.handler.codec.http.HttpHeaders;
+import io.netty.handler.codec.http.*;
 import io.netty.handler.codec.http.websocketx.WebSocketFrame;
 import io.netty.handler.codec.http.websocketx.WebSocketServerProtocolHandler;
+import io.netty.handler.logging.LoggingHandler;
 import lombok.extern.slf4j.Slf4j;
 
 import java.nio.Buffer;
+import java.nio.ByteBuffer;
+import java.util.Objects;
 
 @Slf4j
 public class ProxyLoaderHandler extends SimpleChannelInboundHandler<Object> {
@@ -39,12 +41,11 @@ public class ProxyLoaderHandler extends SimpleChannelInboundHandler<Object> {
                 ctx.fireChannelRead(request.retain()); // 增加引用计数并继续传递
                 break;
             // 字节类型,一般为vpn代理的TCP数据
-            case Buffer buffer:
-
+            case ByteBuf buffer:
+                ctx.pipeline().addLast(new AnalysisVpnHandler());
+                ctx.fireChannelRead(buffer.retain()); // 增加引用计数并继续传递
                 break;
-            /*
-              目前只有http监听请求,后面尝试增加vpn入口监听及vpn的tcp代理
-             */
+
             default:
                 log.error("ProxyLoaderHandler error");
         }

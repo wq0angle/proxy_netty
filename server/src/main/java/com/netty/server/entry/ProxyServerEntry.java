@@ -39,7 +39,6 @@ public class ProxyServerEntry {
     public void start(int port) throws Exception {
         EventLoopGroup bossGroup = new NioEventLoopGroup();
         EventLoopGroup workerGroup = new NioEventLoopGroup();
-        Integer maxContentLength = 1024 * 1024 * 10; //设置最大响应体大小 10M
         // 目录文件中获取sslContextMap
         Map<String,SslContext> sslContextMap;
         if (appConfig.getSslListenerEnabled()) {
@@ -60,9 +59,9 @@ public class ProxyServerEntry {
                                 String sinDefaultFile = appConfig.getSinDefaultFile();
                                 p.addLast(SslContextProvider.getSniHandler(sslContextMap,sinDefaultFile.trim()));
                             }
-                            p.addLast(new LoggingHandler(LogLevel.DEBUG)); // 添加日志处理器，输出 SSL 握手过程中的详细信息
-                            p.addLast(new HttpServerCodec());
-                            p.addLast(new HttpObjectAggregator(maxContentLength));
+//                            p.addLast(new LoggingHandler(LogLevel.DEBUG)); // 添加日志处理器，输出 SSL 握手过程中的详细信息
+//                            p.addLast(new HttpServerCodec());
+//                            p.addLast(new HttpObjectAggregator(Integer.MAX_VALUE));
                             p.addLast(new ProxyLoaderHandler(appConfig));
                         }
                     });
