@@ -67,12 +67,12 @@ public class WebSocketRelayHandler extends ChannelDuplexHandler  {
             }
             return;
         }
-        if (inboundChannel.isActive()) {
-            inboundChannel.writeAndFlush(msg).addListener(ChannelFutureListener.CLOSE_ON_FAILURE);
-        } else {
-            ReferenceCountUtil.release(msg);
-            ctx.channel().close();
-        }
+//        if (inboundChannel.isActive()) {
+//            inboundChannel.writeAndFlush(msg).addListener(ChannelFutureListener.CLOSE_ON_FAILURE);
+//        } else {
+//            ReferenceCountUtil.release(msg);
+//            ctx.channel().close();
+//        }
     }
 
     private final Integer addCnt;

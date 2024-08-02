@@ -50,10 +50,12 @@ public class WebSocketRelayHandler extends ChannelDuplexHandler {
 
     @Override
     public void channelInactive(ChannelHandlerContext ctx) {
-//        log.info("当前通道不再活跃!");
-//        if (inboundChannel != null && inboundChannel.isActive()) {
-//            inboundChannel.close();
-//        }
+        if (channelFlow != ChannelFlowEnum.LOCAL_CHANNEL_FLOW) {
+            log.info("本地通道不再活跃!");
+            if (inboundChannel != null && inboundChannel.isActive()) {
+                inboundChannel.close();
+            }
+        }
     }
 
     @Override

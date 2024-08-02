@@ -16,7 +16,7 @@ import java.net.URI;
 
 public class WebSocketClientMain {
     public static void main(String[] args) throws Exception {
-        URI uri = new URI("ws://127.0.0.1:6088/websocket"); // 修改为您的WebSocket服务端地址
+        URI uri = new URI("ws://127.0.0.1:4433/websocket"); // 修改为您的WebSocket服务端地址
         EventLoopGroup group = new NioEventLoopGroup();
         try {
             //注意这里的false，因为我们不希望WebSocketRelayHandler处理HTTP响应

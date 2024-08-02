@@ -1,7 +1,6 @@
 package com.netty.client.entry;
 
 import com.netty.client.config.AppConfig;
-import com.netty.client.handler.FillWebSocketProxyHandler1;
 import com.netty.client.handler.FillWebSocketVpnHandler;
 import com.netty.common.enums.ProxyReqEnum;
 import com.netty.client.handler.FillProxyHandler;
