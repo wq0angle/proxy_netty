@@ -1,8 +1,11 @@
 package com.netty.client_proxy.entry;
 
 import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.net.IpPrefix;
 import android.net.VpnService;
 import android.os.ParcelFileDescriptor;
+import com.netty.client_proxy.config.AppConfig;
 import timber.log.Timber;
 
 import java.io.FileInputStream;
@@ -18,10 +21,15 @@ public class VpnServiceEntry extends VpnService {
     private Thread vpnThread = null;
     private Socket socket = null;
     private OutputStream outputStream = null;
+    AppConfig appConfig = new AppConfig();
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        setupVpn();
+        try {
+            setupVpn();
+        } catch (PackageManager.NameNotFoundException e) {
+            throw new RuntimeException(e);
+        }
         if (vpnInterface == null) {
             Timber.tag("VPN").e("VPN 服务未启动");
             stopSelf();  // 停止服务
@@ -52,10 +60,12 @@ public class VpnServiceEntry extends VpnService {
         return START_STICKY;
     }
 
-    private void setupVpn() {
+    private void setupVpn() throws PackageManager.NameNotFoundException {
         VpnService.Builder builder = new VpnService.Builder();
         builder.addAddress("10.0.0.2", 24);
+        // 添加默认路由，允许所有流量
         builder.addRoute("0.0.0.0", 0);
+        builder.addDisallowedApplication("com.netty.client_proxy");
         vpnInterface = builder.establish();
         if (vpnInterface == null) {
             Timber.tag("VPN").e("Failed to establish VPN");
@@ -64,7 +74,7 @@ public class VpnServiceEntry extends VpnService {
 
     private void initializeSocketConnection() {
         try {
-            socket = new Socket("127.0.0.1", 8888);
+            socket = new Socket("127.0.0.1", appConfig.getLocalPort());
             outputStream = socket.getOutputStream();
         } catch (Exception e) {
             Timber.tag("VPN").e(e, "Failed to initialize socket connection");
@@ -75,12 +85,20 @@ public class VpnServiceEntry extends VpnService {
         if (outputStream != null) {
             try {
                 // 检查是否是对端口443的连接尝试
-                if (isHttpsConnectionAttempt(data)) {
-                    // 构建CONNECT请求
-                    String connectRequest = buildConnectRequest(data);
-                    // 发送CONNECT请求
-                    outputStream.write(connectRequest.getBytes());
-                    outputStream.flush();
+//                if (isHttpsConnectionAttempt(data)) {
+//                    // 构建CONNECT请求
+//                    String connectRequest = buildConnectRequest(data);
+//                    // 发送CONNECT请求
+//                    outputStream.write(connectRequest.getBytes());
+//                    outputStream.flush();
+//                }
+
+                String destinationIP = extractDestinationIP(data);
+                int destinationPort = extractDestinationPort(data);
+
+                if (destinationIP.equals(appConfig.getRemoteHost()) && destinationPort == appConfig.getRemotePort()) {
+                    // 如果目标地址和端口与配置一致，则报错
+                    Timber.tag("sendDataToNetty").e("VPN: 目标地址和端口与配置一致，无法连接");
                 }
 
                 // 发送原始数据

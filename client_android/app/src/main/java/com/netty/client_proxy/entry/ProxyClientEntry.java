@@ -4,6 +4,7 @@ import com.netty.client_proxy.config.AppConfig;
 import com.netty.client_proxy.enums.ProxyReqEnum;
 import com.netty.client_proxy.handler.FillProxyHandler;
 import com.netty.client_proxy.handler.FillWebSocketProxyHandler;
+import com.netty.client_proxy.handler.FillWebSocketVpnHandler;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelInitializer;
@@ -48,16 +49,20 @@ public class ProxyClientEntry {
                         @Override
                         protected void initChannel(@NotNull SocketChannel ch) throws Exception {
                             ChannelPipeline p = ch.pipeline();
-                            // HTTP编码处理器
-                            p.addLast(new HttpServerCodec());
-                            // HTTP消息聚合处理器，避免半包问题
-                            p.addLast(new HttpObjectAggregator(maxContentLength));
                             // 根据设置,选择代理请求类型
                             if (ProxyReqEnum.parse(appConfig.getProxyType()).equals(ProxyReqEnum.HTTP)) {
+                                // HTTP编码处理器
+                                p.addLast(new HttpServerCodec());
+                                // HTTP消息聚合处理器，避免半包问题
+                                p.addLast(new HttpObjectAggregator(maxContentLength));
                                 p.addLast(new FillProxyHandler(remoteHost, remotePort, appConfig));
                             }else if (ProxyReqEnum.parse(appConfig.getProxyType()).equals(ProxyReqEnum.WEBSOCKET)) {
+                                p.addLast(new HttpServerCodec());
+                                p.addLast(new HttpObjectAggregator(maxContentLength));
                                 p.addLast(new FillWebSocketProxyHandler(appConfig));
 //                                p.addLast(new FillWebSocketProxyHandler1(appConfig));
+                            }else if (ProxyReqEnum.parse(appConfig.getProxyType()).equals(ProxyReqEnum.VPN)) {
+                                p.addLast(new FillWebSocketVpnHandler(appConfig));
                             }else {
                                 Timber.i("请检查配置, 不支持的代理类型: %s ", appConfig.getProxyType());
                             }

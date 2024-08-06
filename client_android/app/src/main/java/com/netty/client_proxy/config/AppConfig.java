@@ -5,14 +5,14 @@ import lombok.Data;
 @Data
 public class AppConfig {
 
-    private String remoteHost = "www.wq0angle.online";
+    private String remoteHost = "30.75.178.142";
 
-    private int remotePort = 443;
+    private int remotePort = 4433;
 
     private Integer localPort = 8888;
 
-    private Boolean sslRequestEnabled = true;
+    private Boolean sslRequestEnabled = false;
 
-    private String proxyType = "websocket";
+    private String proxyType = "vpn";
 
 }

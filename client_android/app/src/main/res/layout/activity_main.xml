@@ -34,22 +34,25 @@
         <Button
                 android:id="@+id/startTestButton"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
+                android:layout_height="115dp"
                 android:layout_marginBottom="16dp"
+                android:textSize="28sp"
                 android:text="@string/test"/>
 
         <Button
                 android:id="@+id/startVpnButton"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
+                android:layout_height="102dp"
                 android:layout_marginBottom="16dp"
+                android:textSize="28sp"
                 android:text="@string/start_vpn"/>
 
         <Button
                 android:id="@+id/stopVpnButton"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
+                android:layout_height="91dp"
                 android:layout_marginBottom="16dp"
+                android:textSize="28sp"
                 android:text="@string/stop_vpn"/>
     </LinearLayout>
 
