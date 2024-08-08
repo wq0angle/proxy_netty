@@ -4,8 +4,11 @@ import io.netty.bootstrap.Bootstrap;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;
+import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import com.netty.client_proxy.config.AppConfig;
+import io.netty.handler.codec.http.HttpClientCodec;
+import io.netty.handler.codec.http.HttpObjectAggregator;
 import timber.log.Timber;
 
 public class FillWebSocketVpnHandler extends SimpleChannelInboundHandler<ByteBuf> {
@@ -24,7 +27,6 @@ public class FillWebSocketVpnHandler extends SimpleChannelInboundHandler<ByteBuf
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, ByteBuf byteBuf) throws Exception {
         // 如果relayChannel尚未连接，则建立连接
-
         if (relayChannel == null || !relayChannel.isActive()) {
             connectToRemoteServer(ctx,byteBuf);
         } else {
@@ -37,23 +39,29 @@ public class FillWebSocketVpnHandler extends SimpleChannelInboundHandler<ByteBuf
         EventLoopGroup group = new NioEventLoopGroup();
         try {
             Bootstrap bootstrap = new Bootstrap();
-            bootstrap.group(group)
+            bootstrap.group(ctx.channel().eventLoop())
                     .channel(NioSocketChannel.class)
                     .option(ChannelOption.SO_KEEPALIVE, true)
-                    .handler(new RelayHandler(ctx.channel())); // 使用RelayHandler进行转发
-
+                    .handler(new ChannelInitializer<SocketChannel>() {
+                        @Override
+                        protected void initChannel(SocketChannel ch) {
+//                            ch.pipeline().addLast(new HttpClientCodec());
+//                            ch.pipeline().addLast(new HttpObjectAggregator(Integer.MAX_VALUE));
+                            ch.pipeline().addLast(new RelayHandler(ctx.channel())); // 使用RelayHandler进行转发
+                        }
+                    });
+            byteBuf.retain();
             // 连接到远程Netty服务器
-            ChannelFuture future = bootstrap.connect(remoteHost, remotePort).sync();
-            relayChannel = future.channel(); // 保存远程连接的Channel
-            future.addListener(f -> {
-                if (f.isSuccess()) {
-                    relayChannel.writeAndFlush(byteBuf.retain());
+            ChannelFuture connectFuture = bootstrap.connect(remoteHost, remotePort);
+            connectFuture.addListener((ChannelFutureListener) future -> {
+                if (future.isSuccess()) {
+                    future.channel().writeAndFlush(byteBuf.retain());
                     Timber.i("成功连接到远程服务器: %s:%s", remoteHost, remotePort);
                 } else {
                     Timber.e("连接到远程服务器失败: %s:%s", remoteHost, remotePort);
                 }
             });
-        } catch (InterruptedException e) {
+        } catch (Exception e) {
             Timber.e(e,"连接到远程服务器时发生错误");
         } finally {
             group.shutdownGracefully();

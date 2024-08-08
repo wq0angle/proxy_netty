@@ -8,6 +8,8 @@ import android.os.ParcelFileDescriptor;
 import com.netty.client_proxy.config.AppConfig;
 import timber.log.Timber;
 
+import javax.net.ssl.SSLSocket;
+import javax.net.ssl.SSLSocketFactory;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -43,7 +45,7 @@ public class VpnServiceEntry extends VpnService {
                 initializeSocketConnection();
 
                 FileInputStream in = new FileInputStream(vpnInterface.getFileDescriptor());
-                byte[] buffer = new byte[1500];
+                byte[] buffer = new byte[1024 * 1024 * 10];
                 int length;
 
                 while (true) {
@@ -96,14 +98,21 @@ public class VpnServiceEntry extends VpnService {
                 String destinationIP = extractDestinationIP(data);
                 int destinationPort = extractDestinationPort(data);
 
-                if (destinationIP.equals(appConfig.getRemoteHost()) && destinationPort == appConfig.getRemotePort()) {
-                    // 如果目标地址和端口与配置一致，则报错
-                    Timber.tag("sendDataToNetty").e("VPN: 目标地址和端口与配置一致，无法连接");
-                }
+                SSLSocketFactory sslSocketFactory = (SSLSocketFactory) SSLSocketFactory.getDefault();
+                SSLSocket sslSocket = (SSLSocket) sslSocketFactory.createSocket(destinationIP, destinationPort);
+                sslSocket.startHandshake();
+                OutputStream outputTarget = sslSocket.getOutputStream();
+                outputTarget.write(data, 0, length);
+                outputTarget.flush();
 
-                // 发送原始数据
-                outputStream.write(data, 0, length);
-                outputStream.flush();
+//                if (destinationIP.equals(appConfig.getRemoteHost()) && destinationPort == appConfig.getRemotePort()) {
+//                    // 如果目标地址和端口与配置一致，则报错
+//                    Timber.tag("sendDataToNetty").e("VPN: 目标地址和端口与代理配置一致，连接异常");
+//                }
+//
+//                // 发送原始数据
+//                outputStream.write(data, 0, length);
+//                outputStream.flush();
             } catch (Exception e) {
                 Timber.tag("VPN").e(e, "Failed to send data");
                 // 重新初始化连接

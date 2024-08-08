@@ -38,7 +38,7 @@ public class WebsiteServerEntry {
                     exchange.sendResponseHeaders(200, content.length);
                     exchange.getResponseBody().write(content);
                 } else {
-                    exchange.sendResponseHeaders(404, 0);
+                    exchange.sendResponseHeaders(403, 0);
                 }
             } catch (Exception e) {
                 log.error("Error handling request", e);
