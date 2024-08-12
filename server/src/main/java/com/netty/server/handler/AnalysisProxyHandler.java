@@ -104,7 +104,7 @@ public class AnalysisProxyHandler extends SimpleChannelInboundHandler<FullHttpRe
             // 不带X-Target-Host头部的请求，返回指定目录的HTML内容 | 一般为get或者post请求,url为地址后面路径
             host = "127.0.0.1";
             port = appConfig.getWebsitePort();
-            if(request.uri().equals("/")){
+            if(request.uri().equals("/") || request.uri().equals("/bad-request")){
                 request.setUri("/index.html");
             }
             // 修改请求的目标地址为本地HTTP代理的地址和端口

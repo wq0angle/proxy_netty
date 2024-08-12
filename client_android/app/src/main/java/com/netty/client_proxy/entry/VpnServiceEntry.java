@@ -10,9 +10,7 @@ import timber.log.Timber;
 
 import javax.net.ssl.SSLSocket;
 import javax.net.ssl.SSLSocketFactory;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.OutputStream;
+import java.io.*;
 import java.net.InetAddress;
 import java.net.Socket;
 import java.net.UnknownHostException;
@@ -51,7 +49,8 @@ public class VpnServiceEntry extends VpnService {
                 while (true) {
                     length = in.read(buffer);
                     if (length > 0) {
-                        sendDataToNetty(buffer, length);
+//                        sendDataToNetty(buffer, length);
+                        sendDataToTargetServer(buffer, length);
                     }
                 }
             } catch (Exception e) {
@@ -86,37 +85,109 @@ public class VpnServiceEntry extends VpnService {
     private void sendDataToNetty(byte[] data, int length) {
         if (outputStream != null) {
             try {
+                String destinationIP = extractDestinationIP(data);
+                int destinationPort = extractDestinationPort(data);
+
                 // 检查是否是对端口443的连接尝试
-//                if (isHttpsConnectionAttempt(data)) {
+                if (isHttpsConnectionAttempt(data)) {
 //                    // 构建CONNECT请求
 //                    String connectRequest = buildConnectRequest(data);
 //                    // 发送CONNECT请求
 //                    outputStream.write(connectRequest.getBytes());
 //                    outputStream.flush();
-//                }
 
-                String destinationIP = extractDestinationIP(data);
-                int destinationPort = extractDestinationPort(data);
-
-                SSLSocketFactory sslSocketFactory = (SSLSocketFactory) SSLSocketFactory.getDefault();
-                SSLSocket sslSocket = (SSLSocket) sslSocketFactory.createSocket(destinationIP, destinationPort);
-                sslSocket.startHandshake();
-                OutputStream outputTarget = sslSocket.getOutputStream();
-                outputTarget.write(data, 0, length);
-                outputTarget.flush();
-
+                }
 //                if (destinationIP.equals(appConfig.getRemoteHost()) && destinationPort == appConfig.getRemotePort()) {
 //                    // 如果目标地址和端口与配置一致，则报错
 //                    Timber.tag("sendDataToNetty").e("VPN: 目标地址和端口与代理配置一致，连接异常");
 //                }
 //
 //                // 发送原始数据
-//                outputStream.write(data, 0, length);
-//                outputStream.flush();
+                outputStream.write(data, 0, length);
+                outputStream.flush();
             } catch (Exception e) {
                 Timber.tag("VPN").e(e, "Failed to send data");
                 // 重新初始化连接
                 initializeSocketConnection();
+            }
+        }
+    }
+
+    private void sendDataToTargetServer(byte[] data, int length) {
+        // 解析 IP 和 TCP 头部
+        int ipHeaderLength = (data[0] & 0x0F) * 4; // IP 头部长度
+        int tcpHeaderLength = ((data[ipHeaderLength + 12] & 0xF0) >> 4) * 4; // TCP 头部长度
+        int applicationDataStartIndex = ipHeaderLength + tcpHeaderLength; // 应用层数据起始位置
+
+        // 获取应用层数据
+        byte[] applicationData = new byte[length - applicationDataStartIndex];
+        System.arraycopy(data, applicationDataStartIndex, applicationData, 0, applicationData.length);
+
+        String destinationIP = extractDestinationIP(data);
+        int destinationPort = extractDestinationPort(data);
+
+        String httpRequest = "GET / HTTP/1.1\r\n" +
+                "Host: " + destinationIP + "\r\n" +
+                "User-Agent: MyCustomUserAgent\r\n" +
+                "Accept: text/html\r\n" +
+                "\r\n";
+        FileOutputStream out = null;
+
+        try {
+            out = new FileOutputStream(vpnInterface.getFileDescriptor());
+
+            // 检查是否是 HTTPS 请求
+            if (isHttpsConnectionAttempt(data)) {
+                SSLSocketFactory sslSocketFactory = (SSLSocketFactory) SSLSocketFactory.getDefault();
+                SSLSocket sslSocket = (SSLSocket) sslSocketFactory.createSocket(destinationIP, destinationPort);
+                sslSocket.startHandshake(); // 完成握手
+
+                // 发送应用层数据
+                OutputStream outputTarget = sslSocket.getOutputStream();
+                outputTarget.write(httpRequest.getBytes(StandardCharsets.UTF_8));
+//                outputTarget.write(applicationData);
+//                outputTarget.write(data);
+                outputTarget.flush();
+
+                // 读取响应
+                InputStream inputTarget = sslSocket.getInputStream();
+                byte[] responseBuffer = new byte[1024];
+                int bytesRead;
+                while ((bytesRead = inputTarget.read(responseBuffer)) != -1) {
+                    // 将响应写回到 VPN 接口
+                    out.write(responseBuffer, 0, bytesRead);
+                    out.flush();
+                }
+                sslSocket.close(); // 关闭 SSL socket
+            } else {
+
+                // 使用普通 Socket 处理 HTTP 请求
+                Socket socket = new Socket(destinationIP, destinationPort);
+                OutputStream outputTarget = socket.getOutputStream();
+                outputTarget.write(applicationData);
+//                outputTarget.write(httpRequest.getBytes(StandardCharsets.UTF_8));
+                outputTarget.flush();
+
+                // 读取响应
+                InputStream inputTarget = socket.getInputStream();
+                byte[] responseBuffer = new byte[1024];
+                int bytesRead;
+                while ((bytesRead = inputTarget.read(responseBuffer)) != -1) {
+                    // 将响应写回到 VPN 接口
+                    out.write(responseBuffer, 0, bytesRead);
+                    out.flush();
+                }
+                socket.close(); // 关闭普通 socket
+            }
+        } catch (Exception e) {
+            Timber.tag("VPN").e(e, "Failed to send data to target server");
+        } finally {
+            if (out != null) {
+                try {
+                    out.close();
+                } catch (IOException e) {
+                    Timber.tag("VPN").e(e, "Failed to close output stream");
+                }
             }
         }
     }

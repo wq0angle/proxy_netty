@@ -31,7 +31,7 @@ public class RelayHandler extends ChannelInboundHandlerAdapter {
 
     @Override
     public void channelInactive(ChannelHandlerContext ctx) {
-        if (relayChannel.isActive()) {
+        if (relayChannel != null && relayChannel.isActive()) {
             relayChannel.writeAndFlush(Unpooled.EMPTY_BUFFER).addListener(ChannelFutureListener.CLOSE);
         }
     }

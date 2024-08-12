@@ -1,18 +1,18 @@
 package com.netty.server.handler;
 
-import com.netty.common.enums.ChannelFlowEnum;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
 import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
-import io.netty.handler.codec.DecoderException;
 import io.netty.handler.codec.http.*;
 import io.netty.handler.logging.LogLevel;
 import io.netty.handler.logging.LoggingHandler;
 import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslContextBuilder;
+import io.netty.handler.ssl.util.InsecureTrustManagerFactory;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.net.ssl.SSLException;
@@ -52,9 +52,9 @@ public class AnalysisVpnHandler extends SimpleChannelInboundHandler<ByteBuf> {
                     .handler(new ChannelInitializer<SocketChannel>() {
                         @Override
                         protected void initChannel(SocketChannel ch) {
+                            ch.pipeline().addLast(sslContext.newHandler(ch.alloc(), targetIp, targetPort)); // 添加 SSL 处理器
                             ch.pipeline().addLast(new HttpClientCodec());
                             ch.pipeline().addLast(new HttpObjectAggregator(Integer.MAX_VALUE));
-                            ch.pipeline().addLast(sslContext.newHandler(ch.alloc(), targetIp, targetPort)); // 添加 SSL 处理器
                             //添加日志处理器
                             ch.pipeline().addLast(new LoggingHandler(LogLevel.INFO));
                             ch.pipeline().addLast(new RelayHandler(ctx.channel()));
@@ -67,15 +67,15 @@ public class AnalysisVpnHandler extends SimpleChannelInboundHandler<ByteBuf> {
             connectFuture.addListener((ChannelFutureListener) future -> {
                 if (future.isSuccess()) {
 
-                    ctx.pipeline().addLast(new HttpClientCodec());
-                    ctx.pipeline().addLast(new HttpObjectAggregator(Integer.MAX_VALUE));
-
-                    FullHttpResponse response = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.OK);
-                    response.headers().set("proxy", "text/plain; charset=UTF-8");
-                    ctx.writeAndFlush(response);
+//                    ctx.pipeline().addLast(new HttpClientCodec());
+//                    ctx.pipeline().addLast(new HttpObjectAggregator(Integer.MAX_VALUE));
+//
+//                    FullHttpResponse response = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.OK);
+//                    response.headers().set("proxy", "text/plain; charset=UTF-8");
+//                    ctx.writeAndFlush(response);
 
 //                    relayChannel.writeAndFlush(msg.retain());
-//                    future.channel().writeAndFlush(createFullHttpRequest(targetIp,targetPort,"/"));
+                    future.channel().writeAndFlush(createFullHttpRequest(targetIp, "/"));
                     // 流处理器替换
 //                    ctx.pipeline().addLast(new RelayHandler(future.channel()));  // 添加用于转发的handler
 //                    ctx.fireChannelRead(msg.retain()); // 增加引用计数并继续传递
@@ -89,18 +89,75 @@ public class AnalysisVpnHandler extends SimpleChannelInboundHandler<ByteBuf> {
         } catch (Exception e) {
             log.error("连接到远程服务器时发生错误",e);
         } finally {
-            group.shutdownGracefully();
+//            group.shutdownGracefully();
         }
     }
 
-    private static FullHttpRequest createFullHttpRequest(String host,int port,String path) {
-        FullHttpRequest request = new DefaultFullHttpRequest(HttpVersion.HTTP_1_1, HttpMethod.GET, "https://" + host + ":" + port + path);
+//    public static void main(String[] args) throws IOException {
+//        String targetIp = "www.baidu.com";
+//        int targetPort = 443;
+//
+//        FullHttpRequest request = createFullHttpRequest(targetIp, "/");
+//        EventLoopGroup group = new NioEventLoopGroup();
+//        try {
+//            SslContext sslContext = SslContextBuilder.forClient()
+//                    .trustManager(InsecureTrustManagerFactory.INSTANCE)
+//                    .build();
+//            Bootstrap bootstrap = new Bootstrap();
+//            bootstrap.group(group)
+//                    .channel(NioSocketChannel.class)
+//                    .option(ChannelOption.SO_KEEPALIVE, true)
+//                    .handler(new ChannelInitializer<SocketChannel>() {
+//                        @Override
+//                        protected void initChannel(SocketChannel ch) {
+//                            ch.pipeline().addLast(sslContext.newHandler(ch.alloc(), targetIp, targetPort)); // 添加 SSL 处理器
+//                            ch.pipeline().addLast(new HttpClientCodec());
+//                            ch.pipeline().addLast(new HttpObjectAggregator(Integer.MAX_VALUE));
+//                            ch.pipeline().addLast(new LoggingHandler(LogLevel.INFO));
+//                            ch.pipeline().addLast(new ChannelInboundHandlerAdapter(){
+//                                @Override
+//                                public void channelRead(ChannelHandlerContext ctx, Object msg) {
+//                                    log.info("收到响应: {}", msg);
+//                                }
+//                                @Override
+//                                public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
+//                                    log.error("异常", cause);
+//                                    ctx.close();
+//                                }
+//                            });
+//                        }
+//                    });
+//
+//            ChannelFuture connectFuture = bootstrap.connect(targetIp,targetPort).sync();
+//            if (connectFuture.isSuccess()) {
+//                Channel future = connectFuture.channel();
+//                ChannelFuture writeFuture = future.writeAndFlush(request).sync();
+//                if (writeFuture.isSuccess()){
+//                    log.info("请求已成功发送到远程服务器: {}:{}", targetIp, targetPort);
+//                }else {
+//                    log.info("请求发送到远程服务器失败: {}:{}", targetIp, targetPort);
+//                }
+//                log.info("成功连接到远程服务器: {}:{}", targetIp, targetPort);
+//            } else {
+//                log.info("连接到远程服务器失败: {}:{}", targetIp, targetPort);
+//            }
+//        }catch (Exception e){
+//            log.error("连接到远程服务器时发生错误",e);
+//        }
+//        finally {
+////            group.shutdownGracefully();
+//        }
+//    }
+
+    private static FullHttpRequest createFullHttpRequest(String host, String path) {
+        FullHttpRequest request = new DefaultFullHttpRequest(HttpVersion.HTTP_1_1, HttpMethod.GET, path, Unpooled.EMPTY_BUFFER);
         request.headers().set("Host", host);
-        request.content().writeBytes(FullHttpRequest.EMPTY_LAST_CONTENT.content());
+        request.headers().set("User-Agent", "Mozilla/5.0");
+        request.headers().set("Connection", "keep-alive");
         return request;
     }
 
-    private void removeCheckHttpHandler(ChannelHandlerContext ctx, Class<? extends ChannelHandler> clazz) {
+    private static void removeCheckHttpHandler(ChannelHandlerContext ctx, Class<? extends ChannelHandler> clazz) {
         if (ctx.pipeline().get(clazz) != null){
             log.debug("remove check http handler");
             ctx.pipeline().remove(clazz);

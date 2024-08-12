@@ -5,7 +5,7 @@ import lombok.Data;
 @Data
 public class AppConfig {
 
-    private String remoteHost = "30.75.178.148";
+    private String remoteHost = "30.75.178.207";
 
     private int remotePort = 4433;
 

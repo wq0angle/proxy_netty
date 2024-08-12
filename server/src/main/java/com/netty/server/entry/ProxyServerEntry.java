@@ -59,9 +59,9 @@ public class ProxyServerEntry {
                                 String sinDefaultFile = appConfig.getSinDefaultFile();
                                 p.addLast(SslContextProvider.getSniHandler(sslContextMap,sinDefaultFile.trim()));
                             }
-//                            p.addLast(new LoggingHandler(LogLevel.DEBUG)); // 添加日志处理器，输出 SSL 握手过程中的详细信息
-//                            p.addLast(new HttpServerCodec());
-//                            p.addLast(new HttpObjectAggregator(Integer.MAX_VALUE));
+                            p.addLast(new LoggingHandler(LogLevel.DEBUG)); // 添加日志处理器，输出 SSL 握手过程中的详细信息
+                            p.addLast(new HttpServerCodec());
+                            p.addLast(new HttpObjectAggregator(Integer.MAX_VALUE));
                             p.addLast(new ProxyLoaderHandler(appConfig));
                         }
                     });
