@@ -46,30 +46,19 @@ public class MainActivity extends AppCompatActivity {
         // 获取按钮的引用
         Button startVpnButton = findViewById(R.id.startVpnButton);
         Button stopVpnButton = findViewById(R.id.stopVpnButton);
-        Button startTestButton = findViewById(R.id.startTestButton);
+//        Button startTestButton = findViewById(R.id.startTestButton);
 
         //netty测试
-        startTestButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                ProxyReqMain.reqTest();
-            }
-        });
+//        startTestButton.setOnClickListener(v -> ProxyReqMain.reqTest());
 
         // 设置启动VPN按钮的点击监听器
-        startVpnButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                startVpnService();  // 调用启动VPN服务的方法
-            }
+        startVpnButton.setOnClickListener(v -> {
+            startVpnService();  // 调用启动VPN服务的方法
         });
 
         // 设置停止VPN按钮的点击监听器
-        stopVpnButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                stopVpnService();  // 调用停止VPN服务的方法
-            }
+        stopVpnButton.setOnClickListener(v -> {
+            stopVpnService();  // 调用停止VPN服务的方法
         });
 
 
@@ -95,7 +84,7 @@ public class MainActivity extends AppCompatActivity {
 //        NavigationUI.setupActionBarWithNavController(this, navController, mAppBarConfiguration);
 //        NavigationUI.setupWithNavController(navigationView, navController);
     }
-
+    Intent serviceIntent = null;
     private void startVpnService() {
         Intent intent = VpnService.prepare(this);
         if (intent != null) {
@@ -103,9 +92,10 @@ public class MainActivity extends AppCompatActivity {
             startActivityForResult(intent, 0);
         } else {
             // 用户已经授权，可以直接启动服务
-            Intent serviceIntent = new Intent(this, VpnServiceEntry.class);
+            serviceIntent = new Intent(this, VpnServiceEntry.class);
             startService(serviceIntent);
         }
+        Snackbar.make(findViewById(R.id.startVpnButton), "VPN 服务已开启", Snackbar.LENGTH_SHORT).show();
     }
 
     @Override
@@ -113,7 +103,7 @@ public class MainActivity extends AppCompatActivity {
         super.onActivityResult(requestCode, resultCode, data);
         if (requestCode == 0 && resultCode == RESULT_OK) {
             // 用户授权成功，启动 VPN 服务
-            Intent serviceIntent = new Intent(this, VpnServiceEntry.class);
+            serviceIntent = new Intent(this, VpnServiceEntry.class);
             startService(serviceIntent);
         } else {
             // 用户拒绝授权或取消，可以适当处理
@@ -123,8 +113,13 @@ public class MainActivity extends AppCompatActivity {
 
     private void stopVpnService() {
         // 实现停止VPN服务的逻辑
-        Intent intent = new Intent(this, VpnServiceEntry.class);
-        stopService(intent);
+        try {
+//            Intent intent = new Intent(this, VpnServiceEntry.class);
+            stopService(serviceIntent);
+            Snackbar.make(findViewById(R.id.stopVpnButton), "VPN 服务已停止", Snackbar.LENGTH_SHORT).show();
+        }catch (Exception e){
+            Timber.tag("VPN").e(e, "VPN 服务停止失败");
+        }
     }
 
     @Override

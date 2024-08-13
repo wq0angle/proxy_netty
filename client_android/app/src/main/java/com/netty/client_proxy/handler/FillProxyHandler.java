@@ -13,6 +13,7 @@ import io.netty.handler.ssl.SslContextBuilder;
 import timber.log.Timber;
 
 import java.io.IOException;
+import java.util.Objects;
 
 public class FillProxyHandler extends SimpleChannelInboundHandler<FullHttpRequest> {
 
@@ -33,30 +34,19 @@ public class FillProxyHandler extends SimpleChannelInboundHandler<FullHttpReques
 
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, FullHttpRequest request) throws Exception {
-        if (request.method() == HttpMethod.CONNECT) {
-            Timber.i("Received CONNECT request: %s", request.uri());
-            handleConnect(ctx, request);
-        } else {
-            // 直接转发其他请求
-            ctx.fireChannelRead(request.retain());
-        }
+        Timber.i("Received request: %s", request);
+        handleConnectAndRequest(ctx, request);
     }
 
-    private void handleConnect(ChannelHandlerContext ctx, FullHttpRequest request) {
+    private void handleConnectAndRequest(ChannelHandlerContext ctx, FullHttpRequest request) {
         // 解析目标主机和端口
         String host = request.uri().substring(0, request.uri().indexOf(":"));
         int port = Integer.parseInt(request.uri().substring(request.uri().indexOf(":") + 1));
 
-        // 构建新请求转发到服务端 | 隐藏url
-//        FullHttpRequest forwardRequest = new DefaultFullHttpRequest(
-//                request.protocolVersion(), HttpMethod.POST, "/proxy");
         FullHttpRequest forwardRequest = new DefaultFullHttpRequest(
                 request.protocolVersion(), request.method(), request.uri());
 
-        //connect请求临时改为POST请求,携带host信息到请求头
-        forwardRequest.headers().add("X-Target-Url", request.uri());
-//        forwardRequest.headers().set("Host", remoteHost);
-        forwardRequest.headers().set("X-Target-Method", request.method().name());
+        forwardRequest.headers().add("Proxy-Target-Enable", true);
         forwardRequest.content().writeBytes(request.content()); // 添加请求体
 
         int maxContentLength = 1024 * 1024 * 10;
@@ -95,7 +85,7 @@ public class FillProxyHandler extends SimpleChannelInboundHandler<FullHttpReques
                 ctx.pipeline().remove(this.getClass());  // 移除当前处理器
                 ctx.pipeline().addLast(new RelayHandler(future.channel()));  // 添加用于转发的handler
 
-                Timber.d("send connect request to post , %s",host);
+                Timber.d("send request to post , %s",host);
             } else {
                 ctx.writeAndFlush(new DefaultFullHttpResponse(
                         HttpVersion.HTTP_1_1, HttpResponseStatus.INTERNAL_SERVER_ERROR));
@@ -105,7 +95,7 @@ public class FillProxyHandler extends SimpleChannelInboundHandler<FullHttpReques
 
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
-        if (cause instanceof IOException && cause.getMessage().contains("Connection reset")) {
+        if (cause instanceof IOException && Objects.requireNonNull(cause.getMessage()).contains("Connection reset")) {
             Timber.d("Connection was reset by the peer");
         } else {
             Timber.e(cause,"Error occurred in FillProxyHandler");

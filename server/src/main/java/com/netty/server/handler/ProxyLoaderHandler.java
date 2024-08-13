@@ -40,11 +40,6 @@ public class ProxyLoaderHandler extends SimpleChannelInboundHandler<Object> {
                 }
                 ctx.fireChannelRead(request.retain()); // 增加引用计数并继续传递
                 break;
-            // 字节类型,一般为vpn代理的TCP数据
-            case ByteBuf buffer:
-                ctx.pipeline().addLast(new AnalysisVpnHandler());
-                ctx.fireChannelRead(buffer.retain()); // 增加引用计数并继续传递
-                break;
 
             default:
                 log.error("ProxyLoaderHandler error");

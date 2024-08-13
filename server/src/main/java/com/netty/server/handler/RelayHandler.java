@@ -20,13 +20,12 @@ public class RelayHandler extends ChannelInboundHandlerAdapter {
 
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) {
-        relayChannel.writeAndFlush(msg).addListener(ChannelFutureListener.CLOSE_ON_FAILURE);
-//        if (relayChannel.isActive()) {
-//            relayChannel.writeAndFlush(msg).addListener(ChannelFutureListener.CLOSE_ON_FAILURE);
-//        } else {
-//            ReferenceCountUtil.release(msg);
-//            ctx.channel().close();
-//        }
+        if (relayChannel.isActive()) {
+            relayChannel.writeAndFlush(msg).addListener(ChannelFutureListener.CLOSE_ON_FAILURE);
+        } else {
+            ReferenceCountUtil.release(msg);
+            ctx.channel().close();
+        }
     }
 
     @Override

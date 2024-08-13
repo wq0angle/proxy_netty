@@ -2,7 +2,12 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
           xmlns:tools="http://schemas.android.com/tools">
 
-    <uses-permission android:name="android.permission.INTERNET"/>
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.CHANGE_WIFI_STATE" />
+    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
+    <uses-permission android:name="android.permission.CHANGE_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.INTERNET" />
+
     <!-- VPN服务需要的权限 -->
     <uses-permission android:name="android.permission.BIND_VPN_SERVICE"
                      tools:ignore="ProtectedPermissions"/>
@@ -31,7 +36,8 @@
 
         <service
                 android:name="com.netty.client_proxy.entry.VpnServiceEntry"
-                android:permission="android.permission.BIND_VPN_SERVICE">
+                android:permission="android.permission.BIND_VPN_SERVICE"
+                >
         </service>
 
     </application>

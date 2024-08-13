@@ -1,7 +1,6 @@
 package com.netty.client.entry;
 
 import com.netty.client.config.AppConfig;
-import com.netty.client.handler.FillWebSocketVpnHandler;
 import com.netty.common.enums.ProxyReqEnum;
 import com.netty.client.handler.FillProxyHandler;
 import com.netty.client.handler.FillWebSocketProxyHandler;
@@ -12,9 +11,7 @@ import io.netty.channel.ChannelPipeline;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
-import io.netty.channel.socket.nio.NioDatagramChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
-import io.netty.handler.codec.DatagramPacketDecoder;
 import io.netty.handler.codec.http.HttpObjectAggregator;
 import io.netty.handler.codec.http.HttpServerCodec;
 import io.netty.handler.logging.LogLevel;
@@ -62,8 +59,6 @@ public class ProxyClientEntry {
                                 p.addLast(new HttpObjectAggregator(maxContentLength));
                                 p.addLast(new FillWebSocketProxyHandler(appConfig));
 //                                p.addLast(new FillWebSocketProxyHandler1(appConfig));
-                            }else if (ProxyReqEnum.parse(appConfig.getProxyType()).equals(ProxyReqEnum.VPN)) {
-                                p.addLast(new FillWebSocketVpnHandler(appConfig));
                             }
                             else {
                                 log.error("请检查配置, 不支持的代理类型: {}", appConfig.getProxyType());

@@ -26,18 +26,18 @@ public class AnalysisProxyHandler extends SimpleChannelInboundHandler<FullHttpRe
     protected void channelRead0(ChannelHandlerContext ctx, FullHttpRequest request) {
         log.info("Request Method: {}, URI: {}, Headers: {}", request.method(), request.uri(), request.headers());
         TargetConnectDTO targetConnect = new TargetConnectDTO();
+        String[] urlArr = request.uri().split(":");
+        targetConnect.setHost(urlArr[0]);
+        targetConnect.setPort(urlArr.length < 2 ? 80 :Integer.parseInt(urlArr[1]));
+        targetConnect.setProxyType(1);
         // 如果是connect方法,表示进行非代理链式请求，作为远程代理直接转发
-        if (request.method() == HttpMethod.CONNECT){
-            String[] urlArr = request.uri().split(":");
-            targetConnect.setHost(urlArr[0]);
-            targetConnect.setPort(urlArr.length < 2 ? 80 :Integer.parseInt(urlArr[1]));
-        }else {
+        if (request.method() != HttpMethod.CONNECT){
             forwardRequest(request,targetConnect);
         }
-        handleConnectRequest(ctx, request, targetConnect.getHost(), targetConnect.getPort());
+        handleConnectRequest(ctx, request, targetConnect);
     }
 
-    private void handleConnectRequest(ChannelHandlerContext ctx, FullHttpRequest request,String host,Integer port) {
+    private void handleConnectRequest(ChannelHandlerContext ctx, FullHttpRequest request,TargetConnectDTO targetConnect) {
         Integer maxContentLength = 1024 * 1024 * 10;
         Bootstrap b = new Bootstrap();
         b.group(ctx.channel().eventLoop())
@@ -55,18 +55,25 @@ public class AnalysisProxyHandler extends SimpleChannelInboundHandler<FullHttpRe
                     }
                 });
 
-        ChannelFuture connectFuture = b.connect(host, port);
+        ChannelFuture connectFuture = b.connect(targetConnect.getHost(), targetConnect.getPort());
         connectFuture.addListener((ChannelFutureListener) future -> {
             if (future.isSuccess()) {
-                if (request.method() == HttpMethod.CONNECT) {
-                    log.info("Connected to target server");
-                    FullHttpResponse response = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.OK);
-                    response.headers().set("proxy", "text/plain; charset=UTF-8");
+                if (targetConnect.getProxyType() != 0) {
+                    if (request.method() == HttpMethod.CONNECT) {
+                        log.info("proxy Connected to target server");
+                        FullHttpResponse response = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.OK);
+                        response.headers().set("proxy", "text/plain; charset=UTF-8");
+                        ctx.writeAndFlush(response);
 
-                    ctx.writeAndFlush(response);
-                    // 移除HTTP处理器并设置透明转发
-                    removeCheckHttpHandler(ctx, HttpServerCodec.class);
-                    removeCheckHttpHandler(ctx, HttpObjectAggregator.class);
+                        // 移除HTTP处理器并设置透明转发
+                        removeCheckHttpHandler(ctx, HttpServerCodec.class);
+                        removeCheckHttpHandler(ctx, HttpObjectAggregator.class);
+                    }else{
+                        log.info("proxy request to target server");
+                        FullHttpRequest forwardRequest = new DefaultFullHttpRequest(
+                                request.protocolVersion(), request.method(), request.uri());
+                        future.channel().writeAndFlush(forwardRequest);
+                    }
 
                     // 流处理器替换
                     removeCheckHttpHandler(ctx, this.getClass()); // 移除当前处理器
@@ -88,30 +95,17 @@ public class AnalysisProxyHandler extends SimpleChannelInboundHandler<FullHttpRe
     }
 
     private void forwardRequest(FullHttpRequest request,TargetConnectDTO targetConnect) {
-        String host;
-        int port;
-        String targetUrl = request.headers().get("X-Target-Url");
-        if (!StringUtil.isNullOrEmpty(targetUrl) && targetUrl.split(":").length > 1){
-            //携带特定的头部信息表示客户端代理过来connect请求
-            host = targetUrl.split(":")[0];
-            port = Integer.parseInt(targetUrl.split(":")[1]);
-            String methodName = request.headers().get("X-Target-Method");
-            request.setMethod(HttpMethod.valueOf(methodName));
-            request.setUri(targetUrl);
-            request.headers().set("Host", host);
-        }
-        else {
-            // 不带X-Target-Host头部的请求，返回指定目录的HTML内容 | 一般为get或者post请求,url为地址后面路径
-            host = "127.0.0.1";
-            port = appConfig.getWebsitePort();
-            if(request.uri().equals("/") || request.uri().equals("/bad-request")){
+        String proxyEnable = request.headers().get("Proxy-Target-Enable");
+        if (StringUtil.isNullOrEmpty(proxyEnable)){
+            targetConnect.setProxyType(0);
+            targetConnect.setHost("127.0.0.1");
+            targetConnect.setPort(appConfig.getWebsitePort());
+            if(request.uri().equals("/")){
                 request.setUri("/index.html");
             }
             // 修改请求的目标地址为本地HTTP代理的地址和端口
-            request.setUri("http://" + host + ":" + port + request.uri());
+            request.setUri("http://" + targetConnect.getHost() + ":" + targetConnect.getPort() + request.uri());
         }
-        targetConnect.setHost(host);
-        targetConnect.setPort(port);
     }
 
     private void removeCheckHttpHandler(ChannelHandlerContext ctx, Class<? extends ChannelHandler> clazz) {

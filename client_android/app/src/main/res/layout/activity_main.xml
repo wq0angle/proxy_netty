@@ -28,16 +28,16 @@
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:orientation="vertical"
-            android:gravity="bottom"
+            android:gravity="center"
             android:padding="16dp">
 
-        <Button
-                android:id="@+id/startTestButton"
-                android:layout_width="match_parent"
-                android:layout_height="115dp"
-                android:layout_marginBottom="16dp"
-                android:textSize="28sp"
-                android:text="@string/test"/>
+<!--        <Button-->
+<!--                android:id="@+id/startTestButton"-->
+<!--                android:layout_width="match_parent"-->
+<!--                android:layout_height="115dp"-->
+<!--                android:layout_marginBottom="16dp"-->
+<!--                android:textSize="28sp"-->
+<!--                android:text="@string/test"/>-->
 
         <Button
                 android:id="@+id/startVpnButton"

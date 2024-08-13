@@ -4,7 +4,6 @@ import com.netty.client_proxy.config.AppConfig;
 import com.netty.client_proxy.enums.ProxyReqEnum;
 import com.netty.client_proxy.handler.FillProxyHandler;
 import com.netty.client_proxy.handler.FillWebSocketProxyHandler;
-import com.netty.client_proxy.handler.FillWebSocketVpnHandler;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelInitializer;
@@ -15,9 +14,6 @@ import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.handler.codec.http.HttpObjectAggregator;
 import io.netty.handler.codec.http.HttpServerCodec;
-import io.netty.handler.logging.LogLevel;
-import io.netty.handler.logging.LoggingHandler;
-import android.util.Log;
 import org.jetbrains.annotations.NotNull;
 import timber.log.Timber;
 
@@ -60,9 +56,6 @@ public class ProxyClientEntry {
                                 p.addLast(new HttpServerCodec());
                                 p.addLast(new HttpObjectAggregator(maxContentLength));
                                 p.addLast(new FillWebSocketProxyHandler(appConfig));
-//                                p.addLast(new FillWebSocketProxyHandler1(appConfig));
-                            }else if (ProxyReqEnum.parse(appConfig.getProxyType()).equals(ProxyReqEnum.VPN)) {
-                                p.addLast(new FillWebSocketVpnHandler(appConfig));
                             }else {
                                 Timber.i("请检查配置, 不支持的代理类型: %s ", appConfig.getProxyType());
                             }

@@ -7,6 +7,7 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.util.ReferenceCountUtil;
 import lombok.extern.slf4j.Slf4j;
+import org.jetbrains.annotations.NotNull;
 import timber.log.Timber;
 
 import java.io.IOException;
@@ -19,16 +20,14 @@ public class RelayHandler extends ChannelInboundHandlerAdapter {
     }
 
     @Override
-    public void channelRead(ChannelHandlerContext ctx, Object msg) {
-        Timber.i("Forwarding data from client to server");
-        relayChannel.writeAndFlush(msg).addListener(ChannelFutureListener.CLOSE_ON_FAILURE);
-//        if (relayChannel.isActive()) {
-//            Timber.i("Forwarding data from client to server");
-//            relayChannel.writeAndFlush(msg).addListener(ChannelFutureListener.CLOSE_ON_FAILURE);
-//        } else {
-//            ReferenceCountUtil.release(msg);
-//            ctx.channel().close();
-//        }
+    public void channelRead(@NotNull ChannelHandlerContext ctx, @NotNull Object msg) {
+        if (relayChannel.isActive()) {
+            Timber.i("Forwarding data from client to server");
+            relayChannel.writeAndFlush(msg).addListener(ChannelFutureListener.CLOSE_ON_FAILURE);
+        } else {
+            ReferenceCountUtil.release(msg);
+            ctx.channel().close();
+        }
     }
 
     @Override
