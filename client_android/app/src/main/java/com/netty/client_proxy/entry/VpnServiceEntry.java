@@ -24,8 +24,16 @@ public class VpnServiceEntry extends VpnService {
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         try {
+            if (intent != null && intent.getBooleanExtra("stop", false)) {
+                Timber.tag("VPN").i("Stopping VPN service...");
+                if (vpnInterface != null) {
+                    vpnInterface.close();  // 自定义方法来停止 VPN
+                }
+                stopSelf();
+                return START_NOT_STICKY;
+            }
             setupVpn();
-        } catch (PackageManager.NameNotFoundException e) {
+        }  catch (IOException | PackageManager.NameNotFoundException e) {
             throw new RuntimeException(e);
         }
         if (vpnInterface == null) {
@@ -49,10 +57,8 @@ public class VpnServiceEntry extends VpnService {
         }
     }
 
-
     @Override
     public void onDestroy() {
-        super.onDestroy();
         try {
             if (vpnInterface != null) {
                 vpnInterface.close();
@@ -60,5 +66,7 @@ public class VpnServiceEntry extends VpnService {
         } catch (IOException e) {
             Timber.tag("VPN").e(e, "onDestroy");
         }
+        super.onDestroy();
     }
+
 }

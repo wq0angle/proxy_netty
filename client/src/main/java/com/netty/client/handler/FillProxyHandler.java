@@ -48,16 +48,10 @@ public class FillProxyHandler extends SimpleChannelInboundHandler<FullHttpReques
         String host = request.uri().substring(0, request.uri().indexOf(":"));
         int port = Integer.parseInt(request.uri().substring(request.uri().indexOf(":") + 1));
 
-        // 构建新请求转发到服务端 | 隐藏url
-//        FullHttpRequest forwardRequest = new DefaultFullHttpRequest(
-//                request.protocolVersion(), HttpMethod.POST, "/proxy");
         FullHttpRequest forwardRequest = new DefaultFullHttpRequest(
                 request.protocolVersion(), request.method(), request.uri());
 
-        //connect请求临时改为POST请求,携带host信息到请求头
-        forwardRequest.headers().add("X-Target-Url", request.uri());
-//        forwardRequest.headers().set("Host", remoteHost);
-        forwardRequest.headers().set("X-Target-Method", request.method().name());
+        forwardRequest.headers().add("Proxy-Target-Enable", true);
         forwardRequest.content().writeBytes(request.content()); // 添加请求体
 
         int maxContentLength = 1024 * 1024 * 10;
