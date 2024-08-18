@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+                                                   android:layout_width="match_parent"
+                                                   android:layout_height="match_parent"
+                                                   android:orientation="vertical"
+                                                   android:padding="16dp">
+    <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:text="设置代理配置文件"
+            android:padding="16dp">
+
+        <EditText
+                android:id="@+id/textRemoteIp"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="输入设置远程域名或IP地址" />
+
+        <EditText
+                android:id="@+id/textRemotePort"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="输入设置远程端口号" />
+
+        <EditText
+                android:id="@+id/textLocalNettyPort"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="输入设置本地透明代理端口号" />
+
+        <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="选择代理类型"/>
+        <Spinner
+                android:id="@+id/spinnerProxyType"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content" />
+        <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="是否开启SSL证书"/>
+        <Spinner
+                android:id="@+id/spinnerSslType"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content" />
+
+        <Button
+                android:id="@+id/dialogConfirmButton"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="确认" />
+
+    </LinearLayout>
+
+</androidx.constraintlayout.widget.ConstraintLayout>

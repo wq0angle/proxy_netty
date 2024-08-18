@@ -1,6 +1,7 @@
 package com.netty.client_proxy.entry;
 
-import com.netty.client_proxy.config.AppConfig;
+import com.netty.client_proxy.config.ProxyLoadConfig;
+import com.netty.client_proxy.entity.ProxyConfigDTO;
 import com.netty.client_proxy.enums.ProxyReqEnum;
 import com.netty.client_proxy.handler.FillProxyHandler;
 import com.netty.client_proxy.handler.FillWebSocketProxyHandler;
@@ -24,12 +25,12 @@ public class ProxyClientEntry {
      * @throws Exception 网络连接或初始化时的异常
      */
     public void start() throws Exception {
-        AppConfig appConfig = new AppConfig();
+        ProxyConfigDTO proxyConfigDTO = ProxyLoadConfig.getProxyConfigDTO();
 
         // 设置本地代理的端口，连接远程的地址、端口
-        int localPort = appConfig.getLocalPort();
-        String remoteHost = appConfig.getRemoteHost();
-        int remotePort = appConfig.getRemotePort();
+        int localPort = proxyConfigDTO.getLocalPort();
+        String remoteHost = proxyConfigDTO.getRemoteHost();
+        int remotePort = proxyConfigDTO.getRemotePort();
 
         EventLoopGroup bossGroup = new NioEventLoopGroup();
         EventLoopGroup workerGroup = new NioEventLoopGroup();
@@ -46,18 +47,18 @@ public class ProxyClientEntry {
                         protected void initChannel(@NotNull SocketChannel ch) throws Exception {
                             ChannelPipeline p = ch.pipeline();
                             // 根据设置,选择代理请求类型
-                            if (ProxyReqEnum.parse(appConfig.getProxyType()).equals(ProxyReqEnum.HTTP)) {
+                            if (ProxyReqEnum.parse(proxyConfigDTO.getProxyType()).equals(ProxyReqEnum.HTTP)) {
                                 // HTTP编码处理器
                                 p.addLast(new HttpServerCodec());
                                 // HTTP消息聚合处理器，避免半包问题
                                 p.addLast(new HttpObjectAggregator(maxContentLength));
-                                p.addLast(new FillProxyHandler(remoteHost, remotePort, appConfig));
-                            }else if (ProxyReqEnum.parse(appConfig.getProxyType()).equals(ProxyReqEnum.WEBSOCKET)) {
+                                p.addLast(new FillProxyHandler(remoteHost, remotePort, proxyConfigDTO));
+                            }else if (ProxyReqEnum.parse(proxyConfigDTO.getProxyType()).equals(ProxyReqEnum.WEBSOCKET)) {
                                 p.addLast(new HttpServerCodec());
                                 p.addLast(new HttpObjectAggregator(maxContentLength));
-                                p.addLast(new FillWebSocketProxyHandler(appConfig));
+                                p.addLast(new FillWebSocketProxyHandler(proxyConfigDTO));
                             }else {
-                                Timber.i("请检查配置, 不支持的代理类型: %s ", appConfig.getProxyType());
+                                Timber.i("请检查配置, 不支持的代理类型: %s ", proxyConfigDTO.getProxyType());
                             }
                         }
                     });

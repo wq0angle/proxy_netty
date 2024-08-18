@@ -1,6 +1,11 @@
 package com.netty.client_proxy.enums;
 
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
 public enum ProxyReqEnum {
     HTTP(1, "http代理请求"),
     WEBSOCKET(2, "websocket代理请求"),
@@ -11,6 +16,10 @@ public enum ProxyReqEnum {
     ProxyReqEnum(Integer code, String msg) {
         this.code = code;
         this.msg = msg;
+    }
+
+    public static List<String> listProxyTypeNames(){
+        return Stream.of(ProxyReqEnum.values()).map(Enum::name).collect(Collectors.toList());
     }
 
     public static ProxyReqEnum parse(String name){

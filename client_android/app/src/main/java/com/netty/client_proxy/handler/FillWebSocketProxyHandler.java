@@ -1,5 +1,6 @@
 package com.netty.client_proxy.handler;
 
+import com.netty.client_proxy.entity.ProxyConfigDTO;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.*;
 import io.netty.channel.socket.SocketChannel;
@@ -9,9 +10,7 @@ import io.netty.handler.codec.http.websocketx.*;
 import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslContextBuilder;
 import io.netty.handler.timeout.IdleStateHandler;
-import lombok.extern.slf4j.Slf4j;
 import timber.log.Timber;
-import com.netty.client_proxy.config.*;
 import com.netty.client_proxy.enums.*;
 
 import java.io.IOException;
@@ -25,12 +24,12 @@ public class FillWebSocketProxyHandler extends SimpleChannelInboundHandler<FullH
     private final int remotePort;
     private final SslContext sslContext;
     private Channel websocketChannel; // WebSocket连接的通道
-    private final AppConfig appConfig;
+    private final ProxyConfigDTO proxyConfigDTO;
 
-    public FillWebSocketProxyHandler(AppConfig appConfig) throws Exception {
-        this.remoteHost = appConfig.getRemoteHost();
-        this.remotePort = appConfig.getRemotePort();
-        this.appConfig = appConfig;
+    public FillWebSocketProxyHandler(ProxyConfigDTO proxyConfigDTO) throws Exception {
+        this.remoteHost = proxyConfigDTO.getRemoteHost();
+        this.remotePort = proxyConfigDTO.getRemotePort();
+        this.proxyConfigDTO = proxyConfigDTO;
         this.sslContext = SslContextBuilder.forClient()
                 .protocols("TLSv1.1", "TLSv1.2")
                 .ciphers(null)  // 默认使用所有可用的加密套件
@@ -54,7 +53,7 @@ public class FillWebSocketProxyHandler extends SimpleChannelInboundHandler<FullH
     private void handleConnect(ChannelHandlerContext ctx, FullHttpRequest request) throws URISyntaxException {
         String wsUri;
         // 根据设置，websocket握手是否启用SSL访问
-        if (appConfig.getSslRequestEnabled()) {
+        if (proxyConfigDTO.getSslRequestEnabled()) {
             wsUri = "wss://";
         }else {
             wsUri = "ws://";
@@ -71,7 +70,7 @@ public class FillWebSocketProxyHandler extends SimpleChannelInboundHandler<FullH
                     @Override
                     protected void initChannel(SocketChannel ch) {
                         // 根据设置,是否启用SSL访问
-                        if (appConfig.getSslRequestEnabled()) {
+                        if (proxyConfigDTO.getSslRequestEnabled()) {
                             ch.pipeline().addLast(sslContext.newHandler(ch.alloc(), remoteHost, remotePort));
                         }
                         ch.pipeline().addLast(new HttpClientCodec());

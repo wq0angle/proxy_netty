@@ -9,16 +9,19 @@ import android.view.View;
 import android.widget.Button;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.drawerlayout.widget.DrawerLayout;
+import androidx.fragment.app.DialogFragment;
 import androidx.navigation.NavController;
 import androidx.navigation.Navigation;
 import androidx.navigation.ui.AppBarConfiguration;
 import androidx.navigation.ui.NavigationUI;
 import com.google.android.material.navigation.NavigationView;
 import com.google.android.material.snackbar.Snackbar;
+import com.netty.client_proxy.config.ProxyLoadConfig;
 import com.netty.client_proxy.databinding.ActivityMainBinding;
 import com.netty.client_proxy.entry.ProxyClientEntry;
 import com.netty.client_proxy.entry.VpnServiceEntry;
 import com.netty.client_proxy.test.ProxyReqMain;
+import com.netty.client_proxy.ui.fragment.ProxyConfigFragment;
 import timber.log.Timber;
 
 public class MainActivity extends AppCompatActivity {
@@ -34,6 +37,8 @@ public class MainActivity extends AppCompatActivity {
 
         setContentView(R.layout.activity_main);
 
+        ProxyLoadConfig.loadProperties(getApplication());
+
         ProxyClientEntry proxyClientEntry = new ProxyClientEntry();
         Thread thread = new Thread(()-> {
             try {
@@ -47,6 +52,7 @@ public class MainActivity extends AppCompatActivity {
         // 获取按钮的引用
         Button startVpnButton = findViewById(R.id.startVpnButton);
         Button stopVpnButton = findViewById(R.id.stopVpnButton);
+        Button openConfigButton = findViewById(R.id.openConfigButton);
 //        Button startTestButton = findViewById(R.id.startTestButton);
 
         //netty测试
@@ -62,30 +68,17 @@ public class MainActivity extends AppCompatActivity {
             stopVpnService();  // 调用停止VPN服务的方法
         });
 
-
-//        binding = ActivityMainBinding.inflate(getLayoutInflater());
-//        setContentView(binding.getRoot());
-//        setSupportActionBar(binding.appBarMain.toolbar);
-//        binding.appBarMain.fab.setOnClickListener(new View.OnClickListener() {
-//            @Override
-//            public void onClick(View view) {
-//                Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
-//                        .setAction("Action", null).show();
-//            }
-//        });
-//        DrawerLayout drawer = binding.drawerLayout;
-//        NavigationView navigationView = binding.navView;
-//        // Passing each menu ID as a set of Ids because each
-//        // menu should be considered as top level destinations.
-//        mAppBarConfiguration = new AppBarConfiguration.Builder(
-//                R.id.nav_home, R.id.nav_gallery, R.id.nav_slideshow)
-//                .setOpenableLayout(drawer)
-//                .build();
-//        NavController navController = Navigation.findNavController(this, R.id.nav_host_fragment_content_main);
-//        NavigationUI.setupActionBarWithNavController(this, navController, mAppBarConfiguration);
-//        NavigationUI.setupWithNavController(navigationView, navController);
+        openConfigButton.setOnClickListener(v -> {
+            DialogFragment newFragment = new ProxyConfigFragment();
+            newFragment.show(getSupportFragmentManager(), "dialog");
+        });
     }
     private void startVpnService() {
+        if (!ProxyLoadConfig.isInitialized()){
+            Snackbar.make(findViewById(R.id.startVpnButton), "代理配置未进行设置保存", Snackbar.LENGTH_SHORT).show();
+            Timber.tag("VPN").e( "代理未读取到配置");
+            return;
+        }
         Intent intent = VpnService.prepare(this);
         if (intent != null) {
             // 用户尚未授权，需要请求授权

@@ -1,6 +1,6 @@
 package com.netty.client_proxy.handler;
 
-import com.netty.client_proxy.config.AppConfig;
+import com.netty.client_proxy.entity.ProxyConfigDTO;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.*;
 import io.netty.channel.socket.SocketChannel;
@@ -20,12 +20,12 @@ public class FillProxyHandler extends SimpleChannelInboundHandler<FullHttpReques
     private final String remoteHost;
     private final int remotePort;
     private final SslContext sslContext;
-    private AppConfig appConfig;
+    private ProxyConfigDTO proxyConfigDTO;
 
-    public FillProxyHandler(String remoteHost, int remotePort, AppConfig appConfig) throws Exception {
+    public FillProxyHandler(String remoteHost, int remotePort, ProxyConfigDTO proxyConfigDTO) throws Exception {
         this.remoteHost = remoteHost;
         this.remotePort = remotePort;
-        this.appConfig = appConfig;
+        this.proxyConfigDTO = proxyConfigDTO;
         this.sslContext = SslContextBuilder.forClient()
                 .protocols("TLSv1.1", "TLSv1.2", "TLSv1.3")
                 .ciphers(null)  // 默认使用所有可用的加密套件
@@ -40,7 +40,8 @@ public class FillProxyHandler extends SimpleChannelInboundHandler<FullHttpReques
 
     private void handleConnectAndRequest(ChannelHandlerContext ctx, FullHttpRequest request) {
         // 解析目标主机和端口
-        String host = request.uri().substring(0, request.uri().indexOf(":"));
+        String url = request.uri().replace("http://","");
+        String host = url.substring(0, request.uri().indexOf(":"));
         int port = Integer.parseInt(request.uri().substring(request.uri().indexOf(":") + 1));
 
         FullHttpRequest forwardRequest = new DefaultFullHttpRequest(
@@ -58,7 +59,7 @@ public class FillProxyHandler extends SimpleChannelInboundHandler<FullHttpReques
                     @Override
                     protected void initChannel(SocketChannel ch) throws Exception {
                         // 仅添加用于转发的handler
-                        if (appConfig.getSslRequestEnabled()) {
+                        if (proxyConfigDTO.getSslRequestEnabled()) {
                             ch.pipeline().addLast(sslContext.newHandler(ch.alloc(), remoteHost, remotePort)); // 添加 SSL 处理器
                         }
                         ch.pipeline().addLast(new LoggingHandler(LogLevel.INFO)); // 添加日志处理器，输出 SSL 握手过程中的详细信息
