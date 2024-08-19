@@ -42,7 +42,9 @@ public class MainActivity extends AppCompatActivity {
         ProxyClientEntry proxyClientEntry = new ProxyClientEntry();
         Thread thread = new Thread(()-> {
             try {
-                proxyClientEntry.start();
+                if (ProxyLoadConfig.isInitialized()){
+                    proxyClientEntry.start();
+                }
             } catch (Exception e) {
                 Timber.e(e, "Error starting proxy client");
             }

@@ -21,3 +21,4 @@ build/
 captures
 .externalNativeBuild
 .cxx
+/client_android/local.properties

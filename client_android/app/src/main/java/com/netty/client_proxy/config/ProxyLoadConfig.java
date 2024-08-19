@@ -28,7 +28,7 @@ public class ProxyLoadConfig {
 
         // 查询MediaStore以获取文件的URI, 不需要具体子目录，会自动检索文件名
         String selection = MediaStore.Files.FileColumns.DISPLAY_NAME + " = ?";
-        String[] selectionArgs = new String[]{"config.properties.txt"};
+        String[] selectionArgs = new String[]{ProxySaveConfig.FILE_FULL_NAME};
         ContentResolver contentResolver = context.getContentResolver();
 
         try (Cursor cursor = contentResolver.query(

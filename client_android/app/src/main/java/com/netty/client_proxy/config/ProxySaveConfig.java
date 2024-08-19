@@ -8,6 +8,7 @@ import android.database.Cursor;
 import android.net.Uri;
 import android.os.Environment;
 import android.provider.MediaStore;
+import lombok.Getter;
 import timber.log.Timber;
 
 import java.io.FileOutputStream;
@@ -18,6 +19,8 @@ import java.util.Properties;
 
 public class ProxySaveConfig {
     private final Context context;
+    private final static String FILE_NAME = "proxy_netty_config";
+    public final static String FILE_FULL_NAME = FILE_NAME + ".txt";
 
     public ProxySaveConfig(Context context) {
         this.context = context.getApplicationContext(); // 使用应用上下文
@@ -48,7 +51,7 @@ public class ProxySaveConfig {
         try {
             // 查询文件是否存在
             String selection = MediaStore.Files.FileColumns.DISPLAY_NAME + " = ?";
-            String[] selectionArgs = new String[]{"config.properties.txt"};
+            String[] selectionArgs = new String[]{FILE_FULL_NAME};
             Uri contentUri = MediaStore.Files.getContentUri("external");
 
             try (Cursor cursor = context.getContentResolver().query(contentUri, null, selection, selectionArgs, null)) {
@@ -65,7 +68,7 @@ public class ProxySaveConfig {
 
             // 保存新文件
             ContentValues values = new ContentValues();
-            values.put(MediaStore.Files.FileColumns.DISPLAY_NAME, "config.properties");
+            values.put(MediaStore.Files.FileColumns.DISPLAY_NAME, FILE_NAME);
             values.put(MediaStore.Files.FileColumns.MIME_TYPE, "text/plain");
             values.put(MediaStore.Files.FileColumns.RELATIVE_PATH, Environment.DIRECTORY_DOCUMENTS + "/netty_proxy");
 

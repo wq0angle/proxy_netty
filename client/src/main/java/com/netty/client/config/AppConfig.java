@@ -30,7 +30,4 @@ public class AppConfig {
     @Value("${windows.proxy.enabled}")
     private Boolean windowsProxyEnabled;
 
-    @Value("${windows.vpn.enabled}")
-    private Boolean windowsVpnEnabled;
-
 }

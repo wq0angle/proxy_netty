@@ -30,6 +30,8 @@ public class ProxyConfigFragment extends DialogFragment {
     private Spinner spinnerProxyType;
     private Spinner spinnerSslType;
 
+    List<String> sslTypeList = Arrays.asList("true", "false");
+
     @NonNull
     @Override
     public Dialog onCreateDialog(@Nullable Bundle savedInstanceState) {
@@ -45,7 +47,8 @@ public class ProxyConfigFragment extends DialogFragment {
 
         // 创建对话框
         AlertDialog.Builder builder = new AlertDialog.Builder(requireActivity());
-        builder.setView(view)
+        builder.setTitle("设置代理配置文件") // 设置标题
+                .setView(view)
                 .setPositiveButton("确认", (dialog, id) -> saveConfig())
                 .setNegativeButton("取消", (dialog, id) -> dialog.dismiss());
 
@@ -86,13 +89,13 @@ public class ProxyConfigFragment extends DialogFragment {
         proxyTypeAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         spinnerProxyType.setAdapter(proxyTypeAdapter);
         //设置开启Ssl类型选择器初始数据
-        List<String> sslTypeList = Arrays.asList("true", "false");
         ArrayAdapter<String> sslAdapter = new ArrayAdapter<>(getContext(),
                 android.R.layout.simple_spinner_item, sslTypeList);
         sslAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         spinnerSslType.setAdapter(sslAdapter);
     }
 
+    //组件设置默认值
     private void loadComponentDataByConfig(){
         ProxyLoadConfig.loadProperties(requireActivity());
         if (!ProxyLoadConfig.isInitialized()){
@@ -103,5 +106,19 @@ public class ProxyConfigFragment extends DialogFragment {
         textRemoteIp.setText(proxyConfigDTO.getRemoteHost());
         textRemotePort.setText(String.valueOf(proxyConfigDTO.getRemotePort()));
         textLocalNettyPort.setText(String.valueOf(proxyConfigDTO.getLocalPort()));
+
+        // 设置代理类型的默认选择项
+        List<String> proxyTypeList = ProxyReqEnum.listProxyTypeNames();
+        int proxyTypeIndex = proxyTypeList.indexOf(proxyConfigDTO.getProxyType());
+        if (proxyTypeIndex >= 0) {
+            spinnerProxyType.setSelection(proxyTypeIndex);
+        }
+
+        // 设置 SSL 类型的默认选择项
+        String sslType = proxyConfigDTO.getSslRequestEnabled() ? "true" : "false";
+        int sslTypeIndex = sslTypeList.indexOf(sslType); // true 对应索引 0，false 对应索引 1
+        if (sslTypeIndex >= 0) {
+            spinnerSslType.setSelection(sslTypeIndex);
+        }
     }
 }
