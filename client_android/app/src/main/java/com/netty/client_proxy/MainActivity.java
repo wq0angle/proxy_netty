@@ -28,7 +28,7 @@ public class MainActivity extends AppCompatActivity {
 
     private AppBarConfiguration mAppBarConfiguration;
     private ActivityMainBinding binding;
-
+    ProxyClientEntry proxyClientEntry = new ProxyClientEntry();
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -38,18 +38,6 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         ProxyLoadConfig.loadProperties(getApplication());
-
-        ProxyClientEntry proxyClientEntry = new ProxyClientEntry();
-        Thread thread = new Thread(()-> {
-            try {
-                if (ProxyLoadConfig.isInitialized()){
-                    proxyClientEntry.start();
-                }
-            } catch (Exception e) {
-                Timber.e(e, "Error starting proxy client");
-            }
-        });
-        thread.start();
 
         // 获取按钮的引用
         Button startVpnButton = findViewById(R.id.startVpnButton);
@@ -62,11 +50,21 @@ public class MainActivity extends AppCompatActivity {
 
         // 设置启动VPN按钮的点击监听器
         startVpnButton.setOnClickListener(v -> {
+
+            new Thread(()-> {
+                if (ProxyLoadConfig.isInitialized()){
+                    proxyClientEntry.start();
+                }
+            }).start();
+
             startVpnService();  // 调用启动VPN服务的方法
         });
 
         // 设置停止VPN按钮的点击监听器
         stopVpnButton.setOnClickListener(v -> {
+
+            new Thread(()-> proxyClientEntry.stop()).start();
+
             stopVpnService();  // 调用停止VPN服务的方法
         });
 

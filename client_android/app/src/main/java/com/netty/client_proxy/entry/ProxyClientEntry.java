@@ -19,12 +19,12 @@ import org.jetbrains.annotations.NotNull;
 import timber.log.Timber;
 
 public class ProxyClientEntry {
-
+    EventLoopGroup bossGroup;
+    EventLoopGroup workerGroup ;
     /**
      * 启动客户端，初始化连接并设置默认处理器链。
-     * @throws Exception 网络连接或初始化时的异常
      */
-    public void start() throws Exception {
+    public void start() {
         ProxyConfigDTO proxyConfigDTO = ProxyLoadConfig.getProxyConfigDTO();
 
         // 设置本地代理的端口，连接远程的地址、端口
@@ -32,8 +32,15 @@ public class ProxyClientEntry {
         String remoteHost = proxyConfigDTO.getRemoteHost();
         int remotePort = proxyConfigDTO.getRemotePort();
 
-        EventLoopGroup bossGroup = new NioEventLoopGroup();
-        EventLoopGroup workerGroup = new NioEventLoopGroup();
+        if (bossGroup != null && !bossGroup.isShutdown()){
+            Timber.tag("ProxyClient").e("客户端已开启,不能重复开启");
+        }
+        if (workerGroup != null && !workerGroup.isShutdown()){
+            Timber.tag("ProxyClient").e("客户端已开启,不能重复开启");
+        }
+
+        bossGroup = new NioEventLoopGroup();
+        workerGroup = new NioEventLoopGroup();
         int maxContentLength = 1024 * 1024 * 10;
 
         try {
@@ -64,12 +71,26 @@ public class ProxyClientEntry {
                     });
 
             Channel ch = b.bind("127.0.0.1",localPort).sync().channel();
-            Timber.i("HTTP代理客户端启动，监听端口: %s ", localPort);
+            Timber.i("代理客户端启动，监听端口: %s ", localPort);
             ch.closeFuture().sync();
-        } finally {
-            bossGroup.shutdownGracefully();
-            workerGroup.shutdownGracefully();
+        } catch (Exception e){
+            Timber.e(e, "代理客户端启动失败");
         }
+    }
+
+    public void stop(){
+        if (bossGroup == null || bossGroup.isShutdown()) {
+            Timber.tag("ProxyClient").e("客户端已关闭,不能重复关闭");
+            return;
+        }
+        if (workerGroup == null || workerGroup.isShutdown()) {
+            Timber.tag("ProxyClient").e("客户端已关闭,不能重复关闭");
+            return;
+        }
+
+        bossGroup.shutdownGracefully();
+        workerGroup.shutdownGracefully();
+        Timber.tag("ProxyClient").i("客户端关闭成功");
     }
 
 }
