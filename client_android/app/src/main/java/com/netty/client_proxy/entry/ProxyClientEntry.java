@@ -19,8 +19,8 @@ import org.jetbrains.annotations.NotNull;
 import timber.log.Timber;
 
 public class ProxyClientEntry {
-    EventLoopGroup bossGroup;
-    EventLoopGroup workerGroup ;
+    static EventLoopGroup bossGroup;
+    static EventLoopGroup workerGroup;
     /**
      * 启动客户端，初始化连接并设置默认处理器链。
      */
@@ -32,17 +32,14 @@ public class ProxyClientEntry {
         String remoteHost = proxyConfigDTO.getRemoteHost();
         int remotePort = proxyConfigDTO.getRemotePort();
 
-        if (bossGroup != null && !bossGroup.isShutdown()){
+        if (isRunning()){
             Timber.tag("ProxyClient").e("客户端已开启,不能重复开启");
+            return;
         }
-        if (workerGroup != null && !workerGroup.isShutdown()){
-            Timber.tag("ProxyClient").e("客户端已开启,不能重复开启");
-        }
-
         bossGroup = new NioEventLoopGroup();
         workerGroup = new NioEventLoopGroup();
-        int maxContentLength = 1024 * 1024 * 10;
 
+        int maxContentLength = 1024 * 1024 * 10;
         try {
             ServerBootstrap b = new ServerBootstrap();
             b.group(bossGroup, workerGroup)
@@ -79,11 +76,7 @@ public class ProxyClientEntry {
     }
 
     public void stop(){
-        if (bossGroup == null || bossGroup.isShutdown()) {
-            Timber.tag("ProxyClient").e("客户端已关闭,不能重复关闭");
-            return;
-        }
-        if (workerGroup == null || workerGroup.isShutdown()) {
+        if (!isRunning()) {
             Timber.tag("ProxyClient").e("客户端已关闭,不能重复关闭");
             return;
         }
@@ -91,6 +84,10 @@ public class ProxyClientEntry {
         bossGroup.shutdownGracefully();
         workerGroup.shutdownGracefully();
         Timber.tag("ProxyClient").i("客户端关闭成功");
+    }
+
+    public Boolean isRunning(){
+        return bossGroup != null && !bossGroup.isShutdown() && workerGroup != null && !workerGroup.isShutdown();
     }
 
 }

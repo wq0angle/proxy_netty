@@ -34,19 +34,11 @@ public class FillProxyHandler extends SimpleChannelInboundHandler<FullHttpReques
 
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, FullHttpRequest request) throws Exception {
-        if (request.method() == HttpMethod.CONNECT) {
-            log.debug("Received CONNECT request: {}", request.uri());
-            handleConnect(ctx, request);
-        } else {
-            // 直接转发其他请求
-            ctx.fireChannelRead(request.retain());
-        }
+        log.info("Received {} request: {}", request.method(), request.uri());
+        handleConnect(ctx, request);
     }
 
     private void handleConnect(ChannelHandlerContext ctx, FullHttpRequest request) {
-        // 解析目标主机和端口
-        String host = request.uri().substring(0, request.uri().indexOf(":"));
-        int port = Integer.parseInt(request.uri().substring(request.uri().indexOf(":") + 1));
 
         FullHttpRequest forwardRequest = new DefaultFullHttpRequest(
                 request.protocolVersion(), request.method(), request.uri());
@@ -90,7 +82,7 @@ public class FillProxyHandler extends SimpleChannelInboundHandler<FullHttpReques
                 ctx.pipeline().remove(this.getClass());  // 移除当前处理器
                 ctx.pipeline().addLast(new RelayHandler(future.channel()));  // 添加用于转发的handler
 
-                log.debug("send connect request to post , {}",host);
+                log.debug("send connect request to post , {}",request.uri());
             } else {
                 ctx.writeAndFlush(new DefaultFullHttpResponse(
                         HttpVersion.HTTP_1_1, HttpResponseStatus.INTERNAL_SERVER_ERROR));

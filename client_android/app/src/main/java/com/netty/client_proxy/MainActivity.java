@@ -29,6 +29,7 @@ public class MainActivity extends AppCompatActivity {
     private AppBarConfiguration mAppBarConfiguration;
     private ActivityMainBinding binding;
     ProxyClientEntry proxyClientEntry = new ProxyClientEntry();
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -43,28 +44,35 @@ public class MainActivity extends AppCompatActivity {
         Button startVpnButton = findViewById(R.id.startVpnButton);
         Button stopVpnButton = findViewById(R.id.stopVpnButton);
         Button openConfigButton = findViewById(R.id.openConfigButton);
-//        Button startTestButton = findViewById(R.id.startTestButton);
+        Button startTestButton = findViewById(R.id.startTestButton);
 
         //netty测试
-//        startTestButton.setOnClickListener(v -> ProxyReqMain.reqTest());
+        startTestButton.setOnClickListener(v -> {
+            if (!proxyClientEntry.isRunning()){
+                Snackbar.make(findViewById(R.id.startTestButton), "未开启代理，不能测试连接", Snackbar.LENGTH_SHORT).show();
+                return;
+            }
+            new Thread(() -> ProxyReqMain.startReq(this)) .start();
+        });
 
         // 设置启动VPN按钮的点击监听器
         startVpnButton.setOnClickListener(v -> {
-
-            new Thread(()-> {
-                if (ProxyLoadConfig.isInitialized()){
-                    proxyClientEntry.start();
-                }
-            }).start();
-
+            if (!ProxyLoadConfig.isInitialized()){
+                Snackbar.make(findViewById(R.id.startVpnButton), "代理配置未进行设置保存", Snackbar.LENGTH_SHORT).show();
+                Timber.tag("VPN").e( "代理未读取到配置");
+                return;
+            }
+            if (proxyClientEntry.isRunning()){
+                Snackbar.make(findViewById(R.id.startTestButton), "请勿重复开启", Snackbar.LENGTH_SHORT).show();
+                return;
+            }
+            new Thread(() -> proxyClientEntry.start()).start();
             startVpnService();  // 调用启动VPN服务的方法
         });
 
         // 设置停止VPN按钮的点击监听器
         stopVpnButton.setOnClickListener(v -> {
-
-            new Thread(()-> proxyClientEntry.stop()).start();
-
+            proxyClientEntry.stop();
             stopVpnService();  // 调用停止VPN服务的方法
         });
 
@@ -74,11 +82,6 @@ public class MainActivity extends AppCompatActivity {
         });
     }
     private void startVpnService() {
-        if (!ProxyLoadConfig.isInitialized()){
-            Snackbar.make(findViewById(R.id.startVpnButton), "代理配置未进行设置保存", Snackbar.LENGTH_SHORT).show();
-            Timber.tag("VPN").e( "代理未读取到配置");
-            return;
-        }
         Intent intent = VpnService.prepare(this);
         if (intent != null) {
             // 用户尚未授权，需要请求授权

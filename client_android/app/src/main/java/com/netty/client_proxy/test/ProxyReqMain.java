@@ -1,5 +1,11 @@
 package com.netty.client_proxy.test;
 
+import android.app.Activity;
+import android.content.Context;
+import com.google.android.material.snackbar.Snackbar;
+import com.netty.client_proxy.R;
+import com.netty.client_proxy.config.ProxyLoadConfig;
+import com.netty.client_proxy.entity.ProxyConfigDTO;
 import lombok.SneakyThrows;
 import timber.log.Timber;
 
@@ -15,33 +21,14 @@ import java.net.URL;
 
 public class ProxyReqMain {
 
-    public static void reqTest() {
-//        new Thread(ProxyReqMain::startReq).start();
-        new Thread(ProxyReqMain::sendDataTarget).start();
-    }
-
-    private static void sendDataTarget(){
-        try {
-            Timber.tag("VPN").i("send data start");
-            Socket socketTarget1 = new Socket("127.0.0.1", 8888);
-            Socket socketTarget = new Socket("30.75.178.142", 4433);
-
-            Timber.tag("VPN").i("send data");
-            OutputStream output = socketTarget.getOutputStream();
-            output.write(new byte[0]);
-            output.flush(); // 确保数据被发送
-            Timber.tag("VPN").i("send finished");
-        }catch (Exception e) {
-            Timber.tag("VPN").e(e,"Error: ");
-        }
-    }
-
-    private static void startReq() {
-        String targetUrl = "https://www.baidu.com/";
+    public static void startReq(Activity activity) {
+        ProxyConfigDTO proxyConfigDTO = ProxyLoadConfig.getProxyConfigDTO();
+        String targetUrl = "https://google.com";
         String proxyHost = "127.0.0.1";
-        int proxyPort = 8888;
+        int proxyPort = proxyConfigDTO.getLocalPort();
 
         try {
+            long startTime = System.currentTimeMillis(); // 记录开始时间
             URL url = new URL(targetUrl);
 
             Proxy proxy = new Proxy(Proxy.Type.HTTP, new InetSocketAddress(proxyHost, proxyPort));
@@ -59,12 +46,17 @@ public class ProxyReqMain {
             }
             reader.close();
 
-            // 打印响应内容
+            long endTime = System.currentTimeMillis(); // 记录结束时间
+            long responseTime = endTime - startTime; // 计算响应时间
+
+            // 打印响应内容和响应时间
             Timber.tag("reqTest").i("Response: %s", response);
+            Timber.tag("reqTest").i("Response Time: %d ms", responseTime); // 打印响应时间
+            Snackbar.make(activity.findViewById(R.id.startVpnButton), "测试真连接 " + targetUrl + " 响应时间: " + responseTime + " ms", Snackbar.LENGTH_SHORT).show();
 
             connection.disconnect();
         } catch (Exception e) {
             Timber.tag("reqTest").e(e,"Error: ");
-        }
+    }
     }
 }

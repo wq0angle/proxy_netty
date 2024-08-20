@@ -13,6 +13,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import java.net.URI;
+import java.net.URISyntaxException;
+
 @Slf4j
 public class AnalysisProxyHandler extends SimpleChannelInboundHandler<FullHttpRequest> {
 
@@ -23,15 +26,16 @@ public class AnalysisProxyHandler extends SimpleChannelInboundHandler<FullHttpRe
     }
 
     @Override
-    protected void channelRead0(ChannelHandlerContext ctx, FullHttpRequest request) {
+    protected void channelRead0(ChannelHandlerContext ctx, FullHttpRequest request) throws URISyntaxException {
         log.info("Request Method: {}, URI: {}, Headers: {}", request.method(), request.uri(), request.headers());
         TargetConnectDTO targetConnect = new TargetConnectDTO();
         String[] urlArr = request.uri().split(":");
-        targetConnect.setHost(urlArr[0]);
-        targetConnect.setPort(urlArr.length < 2 ? 80 :Integer.parseInt(urlArr[1]));
         targetConnect.setProxyType(1);
         // 如果是connect方法,表示进行非代理链式请求，作为远程代理直接转发
-        if (request.method() != HttpMethod.CONNECT){
+        if (request.method() == HttpMethod.CONNECT){
+            targetConnect.setHost(urlArr[0]);
+            targetConnect.setPort(urlArr.length < 2 ? 80 :Integer.parseInt(urlArr[1]));
+        }else {
             forwardRequest(request,targetConnect);
         }
         handleConnectRequest(ctx, request, targetConnect);
@@ -94,7 +98,7 @@ public class AnalysisProxyHandler extends SimpleChannelInboundHandler<FullHttpRe
         });
     }
 
-    private void forwardRequest(FullHttpRequest request,TargetConnectDTO targetConnect) {
+    private void forwardRequest(FullHttpRequest request,TargetConnectDTO targetConnect) throws URISyntaxException {
         String proxyEnable = request.headers().get("Proxy-Target-Enable");
         if (StringUtil.isNullOrEmpty(proxyEnable)){
             targetConnect.setProxyType(0);
@@ -105,6 +109,14 @@ public class AnalysisProxyHandler extends SimpleChannelInboundHandler<FullHttpRe
             }
             // 修改请求的目标地址为本地HTTP代理的地址和端口
             request.setUri("http://" + targetConnect.getHost() + ":" + targetConnect.getPort() + request.uri());
+        }else {
+            URI uri = new URI(request.uri());
+            targetConnect.setHost(uri.getHost());
+            targetConnect.setPort(uri.getPort());
+            // 如果端口未指定，则返回 -1
+            if (targetConnect.getPort() == -1) {
+                targetConnect.setPort(uri.getScheme().equals("https") ? 443 : 80); // 默认端口
+            }
         }
     }
 
