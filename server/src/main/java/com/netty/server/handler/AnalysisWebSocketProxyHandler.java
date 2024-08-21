@@ -1,7 +1,10 @@
 package com.netty.server.handler;
 
+import com.alibaba.fastjson.JSON;
+import com.netty.common.entity.HttpRequestDTO;
 import com.netty.common.enums.ChannelFlowEnum;
 import io.netty.bootstrap.Bootstrap;
+import io.netty.buffer.Unpooled;
 import io.netty.channel.*;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
@@ -11,13 +14,15 @@ import io.netty.util.CharsetUtil;
 import lombok.extern.slf4j.Slf4j;
 import com.netty.common.util.WebSocketUtil;
 import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.time.LocalDate;
 
 @Slf4j
 public class AnalysisWebSocketProxyHandler extends SimpleChannelInboundHandler<WebSocketFrame> {
 
     @Override
-    protected void channelRead0(ChannelHandlerContext ctx, WebSocketFrame msg) {
+    protected void channelRead0(ChannelHandlerContext ctx, WebSocketFrame msg) throws URISyntaxException {
         if (msg != null) {
             handleWebSocketFrame(ctx, msg);
         } else {
@@ -25,8 +30,9 @@ public class AnalysisWebSocketProxyHandler extends SimpleChannelInboundHandler<W
         }
     }
 
-    private void handleHttpRequest(ChannelHandlerContext ctx, String host, Integer port) {
-        Integer maxContentLength = 1024 * 1024 * 10;
+    private void handleHttpRequest(ChannelHandlerContext ctx, String host, Integer port, FullHttpRequest httpRequest) {
+        String uri = httpRequest.uri();
+
         Bootstrap b = new Bootstrap();
         b.group(ctx.channel().eventLoop())
                 .channel(NioSocketChannel.class)
@@ -35,6 +41,11 @@ public class AnalysisWebSocketProxyHandler extends SimpleChannelInboundHandler<W
                     protected void initChannel(SocketChannel ch) {
                         // 仅添加用于转发的handler,代理服务端无需SSL处理，因为握手过程处理交由代理客户端处理
 //                        ch.pipeline().addLast(new LoggingHandler(LogLevel.INFO));
+                        if (httpRequest.method() != HttpMethod.CONNECT) {
+                            // 添加HTTP处理器
+                            ch.pipeline().addLast(new HttpClientCodec());
+                            ch.pipeline().addLast(new HttpObjectAggregator(Integer.MAX_VALUE));
+                        }
                         ch.pipeline().addLast(new FramePackRelayHandler(ctx.channel(), ChannelFlowEnum.LOCAL_CHANNEL_FLOW));
                     }
                 });
@@ -42,7 +53,8 @@ public class AnalysisWebSocketProxyHandler extends SimpleChannelInboundHandler<W
         ChannelFuture connectFuture = b.connect(host, port);
         connectFuture.addListener((ChannelFutureListener) future -> {
             if (future.isSuccess()) {
-                    log.info("Connected to target server");
+                if (httpRequest.method() == HttpMethod.CONNECT) {
+                    log.info("Connected to target server | uri:{}", uri);
 
                     FullHttpResponse response = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.OK);
                     response.headers().set("proxy", "text/plain; charset=UTF-8");
@@ -58,8 +70,12 @@ public class AnalysisWebSocketProxyHandler extends SimpleChannelInboundHandler<W
 
                     // 流处理器替换
                     removeCheckHttpHandler(ctx, this.getClass());  // 移除当前处理器
-                    ctx.pipeline().addLast(new FramePackRelayHandler(future.channel(),ChannelFlowEnum.FUTURE_CHANNEL_FLOW));
+                    ctx.pipeline().addLast(new FramePackRelayHandler(future.channel(), ChannelFlowEnum.FUTURE_CHANNEL_FLOW));
+                } else {
+                    log.info("Request to target server | uri:{}",uri);
 
+                    future.channel().writeAndFlush(httpRequest);
+                }
             } else {
                 // 连接失败，向客户端发送 500 错误
                 ctx.writeAndFlush(new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.INTERNAL_SERVER_ERROR));
@@ -68,19 +84,35 @@ public class AnalysisWebSocketProxyHandler extends SimpleChannelInboundHandler<W
         });
     }
 
-    private void handleWebSocketFrame(ChannelHandlerContext ctx, WebSocketFrame frame) {
+    private void handleWebSocketFrame(ChannelHandlerContext ctx, WebSocketFrame frame) throws URISyntaxException {
         if (frame instanceof TextWebSocketFrame) {
             // 处理WebSocket消息并转发到目标HTTP服务器
             String reqStr = ((TextWebSocketFrame) frame).text();
+
+            HttpRequestDTO httpRequest = JSON.parseObject(reqStr, HttpRequestDTO.class);
+            FullHttpRequest request = new DefaultFullHttpRequest(HttpVersion.valueOf(httpRequest.getVersion()),
+                    HttpMethod.valueOf(httpRequest.getMethod()), httpRequest.getUri(), Unpooled.wrappedBuffer(httpRequest.getContent()));
+            httpRequest.getHeaders().forEach((key, value) -> request.headers().add(key, value));
             log.info("WebSocket Frame: {}", reqStr);
-            if (reqStr.contains("http://")) {
-                reqStr = reqStr.replace("http://", "");
+
+            String host;
+            int port ;
+            if (request.method() == HttpMethod.CONNECT){
+                String[] urlArr = request.uri().split(":");
+                host = urlArr[0];
+                port = urlArr.length < 2 ? 80 :Integer.parseInt(urlArr[1]);
+            }else {
+                URI uri = new URI(request.uri());
+                host = uri.getHost();
+                port = uri.getPort();
+                // 如果端口未指定，则返回 -1
+                if (port == -1) {
+                    port = uri.getScheme().equals("https") ? 443 : 80; // 默认端口
+                }
             }
-            // 假设目标URL在WebSocket消息中
-            String[] urlArr = reqStr.split(":");
-            String host = urlArr[0];
-            Integer port = urlArr.length > 1 ? Integer.parseInt(urlArr[1]) : 80;
-            handleHttpRequest(ctx, host, port);
+
+            handleHttpRequest(ctx, host, port, request);
+
         } else if (frame instanceof BinaryWebSocketFrame) {
             log.debug("WebSocket Frame: {}", frame.content().toString(CharsetUtil.UTF_8));
         } else if (frame instanceof CloseWebSocketFrame) {

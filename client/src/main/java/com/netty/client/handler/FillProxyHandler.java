@@ -41,8 +41,9 @@ public class FillProxyHandler extends SimpleChannelInboundHandler<FullHttpReques
     private void handleConnect(ChannelHandlerContext ctx, FullHttpRequest request) {
 
         FullHttpRequest forwardRequest = new DefaultFullHttpRequest(
-                request.protocolVersion(), request.method(), request.uri());
+                request.protocolVersion(), request.method(), request.uri(), request.content());
 
+        forwardRequest.headers().add(request.headers());
         forwardRequest.headers().add("Proxy-Target-Enable", true);
         forwardRequest.content().writeBytes(request.content()); // 添加请求体
 
