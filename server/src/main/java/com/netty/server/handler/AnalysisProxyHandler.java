@@ -76,6 +76,8 @@ public class AnalysisProxyHandler extends SimpleChannelInboundHandler<FullHttpRe
                         log.info("proxy request to target server");
                         FullHttpRequest forwardRequest = new DefaultFullHttpRequest(
                                 request.protocolVersion(), request.method(), request.uri());
+                        forwardRequest.headers().set(request.headers());
+                        forwardRequest.content().writeBytes(request.content()); // 添加请求体
                         future.channel().writeAndFlush(forwardRequest);
                     }
 

@@ -66,4 +66,8 @@ dependencies {
     implementation 'io.netty:netty-all:4.1.99.Final'
     // 添加 Timber 的依赖
     implementation 'com.jakewharton.timber:timber:4.7.1'
+    // 添加JSON依赖
+    // https://mvnrepository.com/artifact/com.alibaba/fastjson
+    implementation group: 'com.alibaba', name: 'fastjson', version: '2.0.52'
+
 }

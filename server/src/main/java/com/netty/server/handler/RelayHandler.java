@@ -1,17 +1,14 @@
 package com.netty.server.handler;
 
 import io.netty.buffer.Unpooled;
-import io.netty.channel.Channel;
-import io.netty.channel.ChannelFutureListener;
-import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.ChannelInboundHandlerAdapter;
+import io.netty.channel.*;
 import io.netty.util.ReferenceCountUtil;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
 
 @Slf4j
-public class RelayHandler extends ChannelInboundHandlerAdapter {
+public class RelayHandler extends ChannelDuplexHandler {
     private final Channel relayChannel;
 
     public RelayHandler(Channel relayChannel) {
@@ -26,6 +23,10 @@ public class RelayHandler extends ChannelInboundHandlerAdapter {
             ReferenceCountUtil.release(msg);
             ctx.channel().close();
         }
+    }
+    @Override
+    public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) throws Exception {
+        super.write(ctx, msg, promise);
     }
 
     @Override

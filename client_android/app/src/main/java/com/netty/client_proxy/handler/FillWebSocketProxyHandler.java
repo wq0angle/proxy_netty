@@ -1,5 +1,7 @@
 package com.netty.client_proxy.handler;
 
+import com.alibaba.fastjson.JSON;
+import com.netty.client_proxy.entity.HttpRequestDTO;
 import com.netty.client_proxy.entity.ProxyConfigDTO;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.*;
@@ -16,7 +18,9 @@ import com.netty.client_proxy.enums.*;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 public class FillWebSocketProxyHandler extends SimpleChannelInboundHandler<FullHttpRequest> {
 
@@ -83,12 +87,15 @@ public class FillWebSocketProxyHandler extends SimpleChannelInboundHandler<FullH
                     }
                 });
 
+        FullHttpRequest requestNew = new DefaultFullHttpRequest(request.protocolVersion(), request.method(), request.uri());
+        requestNew.headers().add(request.headers());
+
         b.connect(remoteHost, remotePort).addListener((ChannelFutureListener) future -> {
             if (future.isSuccess()) {
                 websocketChannel = future.channel();
                 webSocketRelayHandler.handshakeFuture().addListener((ChannelFutureListener) handshakeFuture -> {
                     if (handshakeFuture.isSuccess()) {
-                        sendRequestOverWebSocket(ctx, request);
+                        sendRequestOverWebSocket(ctx, requestNew);
                     } else {
                         Timber.e("WebSocket握手失败,%s:%s",remoteHost,remotePort);
                         ctx.writeAndFlush(new DefaultFullHttpResponse(
@@ -107,8 +114,14 @@ public class FillWebSocketProxyHandler extends SimpleChannelInboundHandler<FullH
 
     private void sendRequestOverWebSocket(ChannelHandlerContext ctx, FullHttpRequest request) {
         if (websocketChannel != null && websocketChannel.isActive()) {
-            // 发送CONNECT请求到代理服务端
-            WebSocketFrame frame = new TextWebSocketFrame(request.uri());
+            // 发送请求到代理服务端
+            Map<String,String> headers = request.headers().entries().stream().collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+            byte[] byteArray = new byte[request.content().readableBytes()];
+            request.content().getBytes(0, byteArray); // 从索引 0 开始读取
+            HttpRequestDTO httpRequestDTO = new HttpRequestDTO(request.uri(),request.method().name(),
+                    request.protocolVersion().text(), headers, byteArray);
+            String reqStr = JSON.toJSONString(httpRequestDTO);
+            WebSocketFrame frame = new TextWebSocketFrame(reqStr);
             websocketChannel.writeAndFlush(frame);
 
             // 立即移除客户端和服务端的channel通道HTTP处理器

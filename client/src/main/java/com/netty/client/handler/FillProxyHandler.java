@@ -38,7 +38,7 @@ public class FillProxyHandler extends SimpleChannelInboundHandler<FullHttpReques
         handleConnect(ctx, request);
     }
 
-    private void handleConnect(ChannelHandlerContext ctx, FullHttpRequest request) {
+    private void handleConnect(ChannelHandlerContext ctx, FullHttpRequest request) throws InterruptedException {
 
         FullHttpRequest forwardRequest = new DefaultFullHttpRequest(
                 request.protocolVersion(), request.method(), request.uri(), request.content());
@@ -67,6 +67,7 @@ public class FillProxyHandler extends SimpleChannelInboundHandler<FullHttpReques
                 });
 
         ChannelFuture connectFuture = b.connect(remoteHost, remotePort);
+        forwardRequest.retain();
         connectFuture.addListener((ChannelFutureListener) future -> {
             if (future.isSuccess()) {
                 //发送修改的请求

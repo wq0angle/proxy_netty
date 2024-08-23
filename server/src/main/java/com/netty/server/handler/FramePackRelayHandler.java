@@ -1,11 +1,15 @@
 package com.netty.server.handler;
 
 import com.netty.common.enums.ChannelFlowEnum;
+import com.netty.common.util.WebSocketUtil;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.*;
+import io.netty.handler.codec.http.FullHttpRequest;
+import io.netty.handler.codec.http.FullHttpResponse;
 import io.netty.handler.codec.http.websocketx.BinaryWebSocketFrame;
 import io.netty.handler.codec.http.websocketx.TextWebSocketFrame;
 import io.netty.handler.codec.http.websocketx.WebSocketFrame;
+import io.netty.handler.codec.http.websocketx.WebSocketFrameEncoder;
 import io.netty.util.ReferenceCountUtil;
 import lombok.extern.slf4j.Slf4j;
 
@@ -54,6 +58,16 @@ public class FramePackRelayHandler extends ChannelDuplexHandler {
             case ByteBuf data -> {
 //                log.debug("TCP流转Websocket二进制帧,data:{}", data.toString(CharsetUtil.UTF_8));
                 WebSocketFrame frame = new BinaryWebSocketFrame(data);
+                ctx.writeAndFlush(frame, promise);
+            }
+            case FullHttpRequest request -> {
+//                log.debug("TCP流转Websocket文本帧,request:{}", request.uri());
+                super.write(ctx, request, promise);
+            }
+            case FullHttpResponse response -> {
+//                log.debug("TCP流转Websocket文本帧,response:{}", response);
+                WebSocketFrame frame = WebSocketUtil.convertToTextWebSocketFrame(response);
+
                 ctx.writeAndFlush(frame, promise);
             }
             case null, default -> super.write(ctx, msg, promise);

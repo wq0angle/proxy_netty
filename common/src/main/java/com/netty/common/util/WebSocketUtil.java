@@ -35,7 +35,8 @@ public class WebSocketUtil {
     public static WebSocketFrame convertToTextWebSocketFrame(FullHttpResponse response) {
         StringBuffer buffer =  new StringBuffer();
         buffer.append(frameHead)
-                .append("HTTP/1.1 ")
+                .append(response.protocolVersion().text())
+                .append(" ")
                 .append(response.status().toString())
                 .append("\r\n");
         for (Map.Entry<String, String> header : response.headers()) {
@@ -56,7 +57,7 @@ public class WebSocketUtil {
 
     public static ByteBuf convertToWebBuffer(FullHttpResponse response){
         ByteBuf content = Unpooled.buffer();
-        String statusLine = frameHead + "HTTP/1.1 " + response.status().toString() + "\r\n";
+        String statusLine = frameHead + response.protocolVersion().text() + " " + response.status().toString() + "\r\n";
         content.writeBytes(statusLine.getBytes(CharsetUtil.UTF_8));
         for (Map.Entry<String, String> header : response.headers()) {
             String headerLine = header.getKey() + ": " + header.getValue() + "\r\n";

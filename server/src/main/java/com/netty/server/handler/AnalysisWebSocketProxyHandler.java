@@ -68,14 +68,15 @@ public class AnalysisWebSocketProxyHandler extends SimpleChannelInboundHandler<W
                     removeCheckHttpHandler(ctx, HttpServerCodec.class);
                     removeCheckHttpHandler(ctx, HttpObjectAggregator.class);
 
-                    // 流处理器替换
-                    removeCheckHttpHandler(ctx, this.getClass());  // 移除当前处理器
-                    ctx.pipeline().addLast(new FramePackRelayHandler(future.channel(), ChannelFlowEnum.FUTURE_CHANNEL_FLOW));
                 } else {
                     log.info("Request to target server | uri:{}",uri);
 
                     future.channel().writeAndFlush(httpRequest);
                 }
+
+                // 流处理器替换
+                removeCheckHttpHandler(ctx, this.getClass());  // 移除当前处理器
+                ctx.pipeline().addLast(new FramePackRelayHandler(future.channel(), ChannelFlowEnum.FUTURE_CHANNEL_FLOW));
             } else {
                 // 连接失败，向客户端发送 500 错误
                 ctx.writeAndFlush(new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.INTERNAL_SERVER_ERROR));
@@ -178,6 +179,14 @@ public class AnalysisWebSocketProxyHandler extends SimpleChannelInboundHandler<W
     @Override
     public void handlerAdded(ChannelHandlerContext ctx) {
         log.debug("handlerAdded | server ip : [{}] connected", ctx.channel().remoteAddress());
+    }
+
+    public static void main(String[] args) {
+//        String str = "{\"content\":\"\",\"headers\":{\"content-length\":\"0\",\"User-Agent\":\"Dalvik/2.1.0 (Linux; U; Android 14; sdk_gphone64_x86_64 Build/UE1A.230829.036.A4)\",\"Host\":\"google.com:443\",\"Proxy-Connection\":\"Keep-Alive\"},\"method\":\"CONNECT\",\"uri\":\"google.com:443\",\"version\":\"HTTP/1.1\"}";
+        String str1 = "{\"content\":[],\"headers\":{\"content-length\":\"0\",\"User-Agent\":\"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.0 Safari/537.36\",\"Host\":\"fanyi.baidu.com:443\",\"Proxy-Connection\":\"keep-alive\"},\"method\":\"CONNECT\",\"uri\":\"fanyi.baidu.com:443\",\"version\":\"HTTP/1.1\"}";
+//        HttpRequestDTO httpRequest = JSON.parseObject(str, HttpRequestDTO.class);
+        HttpRequestDTO httpRequest1 = JSON.parseObject(str1, HttpRequestDTO.class);
+        System.out.println("成功");
     }
 
     /**

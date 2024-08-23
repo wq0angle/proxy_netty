@@ -39,14 +39,11 @@ public class FillProxyHandler extends SimpleChannelInboundHandler<FullHttpReques
     }
 
     private void handleConnectAndRequest(ChannelHandlerContext ctx, FullHttpRequest request) {
-        // 解析目标主机和端口
-        String url = request.uri().replace("http://","");
-        String host = url.substring(0, request.uri().indexOf(":"));
-        int port = Integer.parseInt(request.uri().substring(request.uri().indexOf(":") + 1));
 
         FullHttpRequest forwardRequest = new DefaultFullHttpRequest(
                 request.protocolVersion(), request.method(), request.uri());
 
+        forwardRequest.headers().add(request.headers());
         forwardRequest.headers().add("Proxy-Target-Enable", true);
         forwardRequest.content().writeBytes(request.content()); // 添加请求体
 
@@ -86,7 +83,7 @@ public class FillProxyHandler extends SimpleChannelInboundHandler<FullHttpReques
                 ctx.pipeline().remove(this.getClass());  // 移除当前处理器
                 ctx.pipeline().addLast(new RelayHandler(future.channel()));  // 添加用于转发的handler
 
-                Timber.d("send request to post , %s",host);
+                Timber.d("send request to post , %s", request.uri());
             } else {
                 ctx.writeAndFlush(new DefaultFullHttpResponse(
                         HttpVersion.HTTP_1_1, HttpResponseStatus.INTERNAL_SERVER_ERROR));
