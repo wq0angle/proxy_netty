@@ -1,6 +1,14 @@
 package com.netty.server.entry;
 
+import com.netty.server.handler.StaticFileServerHandler;
 import com.sun.net.httpserver.HttpServer;
+import io.netty.bootstrap.ServerBootstrap;
+import io.netty.channel.*;
+import io.netty.channel.nio.NioEventLoopGroup;
+import io.netty.channel.socket.SocketChannel;
+import io.netty.channel.socket.nio.NioServerSocketChannel;
+import io.netty.handler.codec.http.HttpObjectAggregator;
+import io.netty.handler.codec.http.HttpServerCodec;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.EnableAsync;
@@ -21,34 +29,30 @@ public class WebsiteServerEntry {
      * 启动静态网站服务(部署伪装网站, 应对流量嗅探并提高隐蔽性)
      */
     @Async
-    public void start(String ipAddress,Integer port,String websiteDirectory) throws IOException {
+    public void start(String ipAddress,Integer port,String websiteDirectory) throws Exception {
 
-        HttpServer server = HttpServer.create(new InetSocketAddress(ipAddress, port), 0);
-        server.createContext("/", exchange -> {
-            try {
-                String requestPath = exchange.getRequestURI().getPath();
-                //增加安全性检查，以防止目录遍历攻击,比如./xx 或 ../xx
-                File file = new File(Path.of(websiteDirectory + requestPath).normalize().toString());
-                String filePth = file.getPath().replace("\\", "/");
-                if (!filePth.startsWith(websiteDirectory)) {
-                    throw new SecurityException("Attempted directory traversal attack");
-                }
-                if (file.exists() && file.isFile()) {
-                    byte[] content = Files.readAllBytes(file.toPath());
-                    exchange.sendResponseHeaders(200, content.length);
-                    exchange.getResponseBody().write(content);
-                } else {
-                    exchange.sendResponseHeaders(403, 0);
-                }
-            } catch (Exception e) {
-                log.error("Error handling request", e);
-                exchange.sendResponseHeaders(500, 0);
-            } finally {
-                exchange.close();
-            }
-        });
-        server.start();
+        EventLoopGroup bossGroup = new NioEventLoopGroup();
+        EventLoopGroup workerGroup = new NioEventLoopGroup();
+        try {
+            ServerBootstrap b = new ServerBootstrap();
+            b.group(bossGroup, workerGroup)
+                    .channel(NioServerSocketChannel.class)
+                    .option(ChannelOption.SO_BACKLOG, 128)
+                    .childHandler(new ChannelInitializer<SocketChannel>() {
+                        @Override
+                        public void initChannel(SocketChannel ch) {
+                            ch.pipeline().addLast(new HttpServerCodec());
+                            ch.pipeline().addLast(new HttpObjectAggregator(65536));
+                            ch.pipeline().addLast(new StaticFileServerHandler(new File(websiteDirectory)));
+                        }
+                    });
 
-        log.info("静态网站部署启动 url-> {}:{} | 资源目录:{}", ipAddress, port, websiteDirectory);
+            Channel ch = b.bind(ipAddress,port).sync().channel();
+            log.info("静态网站部署启动 url-> {}:{} | 资源目录:{}", ipAddress, port, websiteDirectory);
+            ch.closeFuture().sync();
+        } finally {
+            workerGroup.shutdownGracefully();
+            bossGroup.shutdownGracefully();
+        }
     }
 }

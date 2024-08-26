@@ -19,8 +19,10 @@ import io.netty.handler.codec.http.websocketx.WebSocketServerProtocolHandler;
 import io.netty.handler.logging.LogLevel;
 import io.netty.handler.logging.LoggingHandler;
 import io.netty.handler.ssl.SslContext;
+import jakarta.annotation.PreDestroy;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.stereotype.Component;
 
@@ -35,7 +37,7 @@ public class ProxyServerEntry {
     @Autowired
     private AppConfig appConfig;
 
-//    @Async
+    @Async
     public void start(int port) throws Exception {
         EventLoopGroup bossGroup = new NioEventLoopGroup();
         EventLoopGroup workerGroup = new NioEventLoopGroup();
@@ -69,13 +71,10 @@ public class ProxyServerEntry {
             Channel ch = b.bind(port).sync().channel();
             log.info("代理主服务端启动，监听端口: {}", port);
             ch.closeFuture().sync();
-            log.info("代理主服务端关闭");
         } finally {
-            // 主要用于调试程序时强制终止程序
-            bossGroup.shutdownGracefully(0, 0, TimeUnit.SECONDS);
-            workerGroup.shutdownGracefully(0, 0, TimeUnit.SECONDS);
+            bossGroup.shutdownGracefully();
+            workerGroup.shutdownGracefully();
 
         }
     }
-
 }

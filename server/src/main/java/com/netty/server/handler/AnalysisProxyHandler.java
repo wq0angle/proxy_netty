@@ -109,8 +109,6 @@ public class AnalysisProxyHandler extends SimpleChannelInboundHandler<FullHttpRe
             if(request.uri().equals("/")){
                 request.setUri("/index.html");
             }
-            // 修改请求的目标地址为本地HTTP代理的地址和端口
-            request.setUri("http://" + targetConnect.getHost() + ":" + targetConnect.getPort() + request.uri());
         }else {
             URI uri = new URI(request.uri());
             targetConnect.setHost(uri.getHost());

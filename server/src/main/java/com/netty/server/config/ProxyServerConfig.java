@@ -2,6 +2,7 @@ package com.netty.server.config;
 
 import com.netty.server.entry.ProxyServerEntry;
 import com.netty.server.entry.WebsiteServerEntry;
+import jakarta.annotation.PreDestroy;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -22,7 +23,6 @@ public class ProxyServerConfig {
     public String startServerHandler() throws Exception {
         websiteServerHandler();
         proxyServerHandler();
-//        edgeProxyServerHandler();
         return "附加服务执行完毕";
     }
 
@@ -34,7 +34,7 @@ public class ProxyServerConfig {
     public void websiteServerHandler() throws Exception {
         // 设置http静态网站的代理IP、端口号和静态网站目录
         String ipAddress = "127.0.0.1";
-        int port =  appConfig.getWebsitePort();
+        int port = appConfig.getWebsitePort();
         String websiteDirectory = appConfig.getWebsiteDirectory();
         websiteServerEntry.start(ipAddress, port, websiteDirectory.trim());
     }
