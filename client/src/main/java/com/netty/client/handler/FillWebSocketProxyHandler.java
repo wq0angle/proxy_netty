@@ -46,10 +46,10 @@ public class FillWebSocketProxyHandler extends SimpleChannelInboundHandler<FullH
     protected void channelRead0(ChannelHandlerContext ctx, FullHttpRequest request) throws Exception {
         log.info("Received http request: {}", request.uri());
         if (websocketChannel == null || !websocketChannel.isActive()) {
-            log.info("首次进行websocket握手，加载websocket通道");
+            log.debug("首次进行websocket握手，加载websocket通道");
             handleConnect(ctx, request);
         } else {
-            log.info("发送数据到服务器");
+            log.debug("发送数据到服务器");
             sendRequestOverWebSocket(ctx, request);
         }
 
