@@ -11,7 +11,15 @@
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-<junit.version>5.10.0</junit.version>  </properties>
+    <junit.version>5.10.0</junit.version>
+  </properties>
+
+  <repositories>
+    <repository>
+      <id>aliyun</id>
+      <url>https://maven.aliyun.com/repository/public</url>
+    </repository>
+  </repositories>
 
   <dependencies>
     <dependency>

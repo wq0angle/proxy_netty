@@ -64,7 +64,7 @@ public class FillWebSocketProxyHandler extends SimpleChannelInboundHandler<FullH
         }
         URI uri = new URI(wsUri + remoteHost + ":" + remotePort + "/websocket");
         handshaker = WebSocketClientHandshakerFactory
-                .newHandshaker(uri, WebSocketVersion.V13, null, false, new DefaultHttpHeaders());
+                .newHandshaker(uri, WebSocketVersion.V13, null, false, new DefaultHttpHeaders(),Integer.MAX_VALUE);
         WebSocketRelayHandler webSocketRelayHandler = new WebSocketRelayHandler(handshaker, ctx.channel(), ChannelFlowEnum.LOCAL_CHANNEL_FLOW);
 
         Bootstrap b = new Bootstrap();
@@ -78,7 +78,7 @@ public class FillWebSocketProxyHandler extends SimpleChannelInboundHandler<FullH
                             ch.pipeline().addLast(sslContext.newHandler(ch.alloc(), remoteHost, remotePort));
                         }
                         ch.pipeline().addLast(new HttpClientCodec());
-                        ch.pipeline().addLast(new HttpObjectAggregator(1024 * 1024 * 10));
+                        ch.pipeline().addLast(new HttpObjectAggregator(Integer.MAX_VALUE));
 
                         // 读超时60秒，写超时30秒
                         ch.pipeline().addLast(new IdleStateHandler(60, 30, 0, TimeUnit.SECONDS));

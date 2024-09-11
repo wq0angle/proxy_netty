@@ -47,7 +47,6 @@ public class FillProxyHandler extends SimpleChannelInboundHandler<FullHttpReques
         forwardRequest.headers().add("Proxy-Target-Enable", true);
         forwardRequest.content().writeBytes(request.content()); // 添加请求体
 
-        int maxContentLength = 1024 * 1024 * 10;
         // 连接到目标服务器
         Bootstrap b = new Bootstrap();
         b.group(ctx.channel().eventLoop())
@@ -61,7 +60,7 @@ public class FillProxyHandler extends SimpleChannelInboundHandler<FullHttpReques
                         }
 //                        ch.pipeline().addLast(new LoggingHandler(LogLevel.INFO)); // 添加日志处理器，输出 SSL 握手过程中的详细信息
                         ch.pipeline().addLast(new HttpClientCodec());
-                        ch.pipeline().addLast(new HttpObjectAggregator(maxContentLength));
+                        ch.pipeline().addLast(new HttpObjectAggregator(Integer.MAX_VALUE));
                         ch.pipeline().addLast(new RelayHandler(ctx.channel()));
                     }
                 });

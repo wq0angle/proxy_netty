@@ -42,7 +42,7 @@ public class WebsiteServerEntry {
                         @Override
                         public void initChannel(SocketChannel ch) {
                             ch.pipeline().addLast(new HttpServerCodec());
-                            ch.pipeline().addLast(new HttpObjectAggregator(65536));
+                            ch.pipeline().addLast(new HttpObjectAggregator(Integer.MAX_VALUE));
                             ch.pipeline().addLast(new StaticFileServerHandler(new File(websiteDirectory)));
                         }
                     });
