@@ -124,7 +124,7 @@
             <!-- Default configuration for running with: mvn clean javafx:run -->
             <id>default-cli</id>
             <configuration>
-              <mainClass>com.netty.windows.client_windows/com.netty.windows.client_windows.HelloApplication</mainClass>
+              <mainClass>com.netty.windows.client_windows/com.netty.windows.client_windows.mainApplication</mainClass>
               <launcher>app</launcher>
               <jlinkZipName>app</jlinkZipName>
               <jlinkImageName>app</jlinkImageName>
