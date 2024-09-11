@@ -1,0 +1,1 @@
+git config --global https.proxy https://www.wq0angle.online
