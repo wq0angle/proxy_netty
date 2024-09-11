@@ -23,6 +23,7 @@
         <module>test</module>
         <module>server</module>
         <module>client</module>
+        <module>client_windows</module>
     </modules>
 
     <packaging>pom</packaging>
