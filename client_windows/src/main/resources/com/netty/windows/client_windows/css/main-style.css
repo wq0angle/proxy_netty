@@ -4,7 +4,7 @@
 }
 
 .text-area {
-    -fx-background-color: #1a0606; /* 设置文本区域背景颜色 */
+    -fx-control-inner-background: #1a0606; /* 设置文本区域内部背景颜色 */
     -fx-border-color: #0e2285; /* 设置边框颜色 */
     -fx-border-width: 1px; /* 设置边框宽度 */
 }

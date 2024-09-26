@@ -6,7 +6,10 @@ import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.image.Image;
 import javafx.scene.layout.StackPane;
+import javafx.scene.paint.Color;
+import javafx.scene.shape.Rectangle;
 import javafx.stage.Stage;
+import javafx.stage.StageStyle;
 
 import java.io.IOException;
 import java.util.Objects;
@@ -29,6 +32,7 @@ public class mainApplication extends Application {
 //        });
         // 设置窗口图标
         primaryStage.getIcons().add(new Image(Objects.requireNonNull(getClass().getResourceAsStream("/main_icon.png")))); // 使用相对路径
+        primaryStage.initStyle(StageStyle.DECORATED); // 默认样式
         FXMLLoader fxmlLoader = new FXMLLoader(mainApplication.class.getResource("main-view.fxml"));
 
         Scene scene = new Scene(fxmlLoader.load(), 720, 360);

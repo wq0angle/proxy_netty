@@ -21,5 +21,5 @@
   </HBox>
 
   <Label text="控制台" />
-  <TextArea fx:id="mainConsole" VBox.vgrow="ALWAYS"/> <!-- 设置允许扩展高度 -->
+  <TextArea fx:id="mainConsole" VBox.vgrow="ALWAYS" styleClass="text-area"/> <!-- 设置允许扩展高度 -->
 </VBox>
