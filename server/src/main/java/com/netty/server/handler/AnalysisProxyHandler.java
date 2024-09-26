@@ -42,7 +42,6 @@ public class AnalysisProxyHandler extends SimpleChannelInboundHandler<FullHttpRe
     }
 
     private void handleConnectRequest(ChannelHandlerContext ctx, FullHttpRequest request,TargetConnectDTO targetConnect) {
-        Integer maxContentLength = 1024 * 1024 * 10;
         Bootstrap b = new Bootstrap();
         b.group(ctx.channel().eventLoop())
                 .channel(NioSocketChannel.class)
@@ -52,7 +51,7 @@ public class AnalysisProxyHandler extends SimpleChannelInboundHandler<FullHttpRe
                         if (request.method() != HttpMethod.CONNECT) {
                             // 添加HTTP处理器
                             ch.pipeline().addLast(new HttpClientCodec());
-                            ch.pipeline().addLast(new HttpObjectAggregator(maxContentLength));
+                            ch.pipeline().addLast(new HttpObjectAggregator(Integer.MAX_VALUE));
                         }
                         // 仅添加用于转发的handler,代理服务端无需SSL处理，因为握手过程处理交由代理客户端处理
                         ch.pipeline().addLast(new RelayHandler(ctx.channel()));

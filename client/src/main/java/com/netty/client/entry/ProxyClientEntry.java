@@ -35,7 +35,6 @@ public class ProxyClientEntry {
 
         EventLoopGroup bossGroup = new NioEventLoopGroup();
         EventLoopGroup workerGroup = new NioEventLoopGroup();
-        int maxContentLength = 1024 * 1024 * 10;
 
         try {
             ServerBootstrap b = new ServerBootstrap();
@@ -52,11 +51,11 @@ public class ProxyClientEntry {
                                 // HTTP编码处理器
                                 p.addLast(new HttpServerCodec());
                                 // HTTP消息聚合处理器，避免半包问题
-                                p.addLast(new HttpObjectAggregator(maxContentLength));
+                                p.addLast(new HttpObjectAggregator(Integer.MAX_VALUE));
                                 p.addLast(new FillProxyHandler(remoteHost, remotePort, appConfig));
                             }else if (ProxyReqEnum.parse(appConfig.getProxyType()).equals(ProxyReqEnum.WEBSOCKET)) {
                                 p.addLast(new HttpServerCodec());
-                                p.addLast(new HttpObjectAggregator(maxContentLength));
+                                p.addLast(new HttpObjectAggregator(Integer.MAX_VALUE));
                                 p.addLast(new FillWebSocketProxyHandler(appConfig));
 //                                p.addLast(new FillWebSocketProxyHandler1(appConfig));
                             }
