@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import java.lang.*?>
+<?import java.util.*?>
+<?import javafx.scene.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<?import javafx.scene.text.Text?>
+<?import javafx.collections.FXCollections?>
+<?import javafx.geometry.Insets?>
+<VBox spacing="10.0" xmlns="http://javafx.com/javafx"
+      xmlns:fx="http://javafx.com/fxml"
+      fx:controller="com.netty.windows.client_windows.controller.ConfigController"
+      prefWidth="320.0" prefHeight="260.0"
+      stylesheets="@../css/config-style.css"
+>
+    <padding>
+        <Insets bottom="20.0" left="20.0" right="20.0" top="20.0"/>
+    </padding>
+
+    <HBox spacing="10.0" >  <!-- 使用 HBox 来水平排列按钮 -->
+        <Label text="本地端口:"/>
+        <Region HBox.hgrow="ALWAYS"/>
+        <TextField fx:id="proxyLocalPort" />
+    </HBox>
+
+    <HBox spacing="10.0">  <!-- 使用 HBox 来水平排列按钮 -->
+        <Label text="服务器代理地址:"/>
+        <Region HBox.hgrow="ALWAYS"/>
+        <TextField fx:id="proxyServerAddress"/>
+    </HBox>
+
+    <HBox spacing="10.0">  <!-- 使用 HBox 来水平排列按钮 -->
+        <Label text="服务器代理端口:"/>
+        <Region HBox.hgrow="ALWAYS"/>
+        <TextField fx:id="proxyServerPort"/>
+    </HBox>
+
+    <HBox spacing="10.0">  <!-- 使用 HBox 来水平排列按钮 -->
+        <Label text="是否启用SSL: "/>
+        <Region HBox.hgrow="ALWAYS"/>
+        <ComboBox fx:id="proxySslTypeComboBox" prefWidth="120"/>
+    </HBox>
+
+    <HBox spacing="10.0">  <!-- 使用 HBox 来水平排列按钮 -->
+        <Label text="代理请求类型: "/>
+        <Region HBox.hgrow="ALWAYS"/>
+        <ComboBox fx:id="proxyReqTypeComboBox" prefWidth="120"/>
+    </HBox>
+
+    <Region prefHeight="30"/>
+    <HBox spacing="30.0" alignment="CENTER" >  <!-- 使用 HBox 来水平排列按钮 -->
+        <Button text="保存" onAction="#saveButtonClick"/>
+        <Button text="关闭" onAction="#closeButtonClick"/>
+    </HBox>
+
+</VBox>

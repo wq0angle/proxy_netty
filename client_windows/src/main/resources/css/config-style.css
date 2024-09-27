@@ -1,0 +1,20 @@
+.root {
+    -fx-background-color: #538682; /* 设置背景颜色 */
+}
+
+.text-area {
+    -fx-control-inner-background: #1a0606; /* 设置文本区域内部背景颜色 */
+    -fx-border-color: #0e2285; /* 设置边框颜色 */
+    -fx-border-width: 1px; /* 设置边框宽度 */
+}
+
+/* styles.css */
+.button {
+    -fx-background-color: #2f00ff; /* 按钮背景颜色 */
+    -fx-text-fill: white; /* 按钮文字颜色 */
+    -fx-padding: 10px; /* 按钮内边距 */
+    -fx-font-size: 14px; /* 按钮字体大小 */
+}
+.button:hover {
+    -fx-background-color: #39add7; /* 鼠标悬停时的背景颜色 */
+}

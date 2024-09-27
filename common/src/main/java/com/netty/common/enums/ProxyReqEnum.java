@@ -1,6 +1,9 @@
 package com.netty.common.enums;
 
 
+import java.util.Arrays;
+import java.util.List;
+
 public enum ProxyReqEnum {
     HTTP(1, "http代理请求"),
     WEBSOCKET(2, "websocket代理请求")
@@ -23,5 +26,9 @@ public enum ProxyReqEnum {
             }
         }
         return ProxyReqEnum.valueOf(sb.toString());
+    }
+
+    public static List<String> listAllNames(){
+        return Arrays.stream(ProxyReqEnum.values()).map(ProxyReqEnum::name).toList();
     }
 }

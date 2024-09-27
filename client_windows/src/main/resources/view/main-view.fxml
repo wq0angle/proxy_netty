@@ -7,16 +7,19 @@
 <?import javafx.scene.control.TextArea?>
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.layout.HBox?>
+
 <VBox spacing="10.0" xmlns:fx="http://javafx.com/fxml"
-      fx:controller="com.netty.windows.client_windows.controller.mainController"
-      stylesheets="@css/main-style.css"> <!-- 引用 CSS 文件 -->
+      fx:controller="com.netty.windows.client_windows.controller.MainController"
+      prefWidth="720.0" prefHeight="360.0"
+      stylesheets="@../css/main-style.css"
+>
   <padding>
     <Insets bottom="20.0" left="20.0" right="20.0" top="20.0"/>
   </padding>
 
   <HBox spacing="10.0">  <!-- 使用 HBox 来水平排列按钮 -->
     <Button text="启动" onAction="#proxyStartButtonClick"/>
-    <Button text="关闭" onAction="#proxyStopButtonClick"/>
+    <Button text="停止" onAction="#proxyStopButtonClick"/>
     <Button text="配置" onAction="#proxyConfigButtonClick"/>
   </HBox>
 
