@@ -28,7 +28,7 @@
     <HBox spacing="10.0">  <!-- 使用 HBox 来水平排列按钮 -->
         <Label text="服务器代理地址:"/>
         <Region HBox.hgrow="ALWAYS"/>
-        <TextField fx:id="proxyServerAddress"/>
+        <TextField fx:id="remoteHostTextField"/>
     </HBox>
 
     <HBox spacing="10.0">  <!-- 使用 HBox 来水平排列按钮 -->
@@ -40,13 +40,13 @@
     <HBox spacing="10.0">  <!-- 使用 HBox 来水平排列按钮 -->
         <Label text="是否启用SSL: "/>
         <Region HBox.hgrow="ALWAYS"/>
-        <ComboBox fx:id="proxySslTypeComboBox" prefWidth="120"/>
+        <ComboBox fx:id="sslRequestEnabledComboBox" prefWidth="120"/>
     </HBox>
 
     <HBox spacing="10.0">  <!-- 使用 HBox 来水平排列按钮 -->
         <Label text="代理请求类型: "/>
         <Region HBox.hgrow="ALWAYS"/>
-        <ComboBox fx:id="proxyReqTypeComboBox" prefWidth="120"/>
+        <ComboBox fx:id="proxyTypeComboBox" prefWidth="120"/>
     </HBox>
 
     <Region prefHeight="30"/>
