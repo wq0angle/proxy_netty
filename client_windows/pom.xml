@@ -131,12 +131,6 @@
             <version>1.18.32</version>
             <scope>provided</scope>
         </dependency>
-        <dependency>
-            <groupId>org.projectlombok</groupId>
-            <artifactId>lombok</artifactId>
-            <version>1.18.32</version>
-            <scope>provided</scope>
-        </dependency>
 
     </dependencies>
 
@@ -151,86 +145,86 @@
                     <target>22</target>
                 </configuration>
             </plugin>
-            <plugin>
-                <groupId>io.github.fvarrui</groupId>
-                <artifactId>javapackager</artifactId>
-                <version>1.7.5</version>
-                <configuration>
-                    <name>windows代理客户端</name>
-                    <!--生成jre-->
-                    <bundleJre>true</bundleJre>
-                    <!--程序入口文件-->
-                    <mainClass>com.netty.windows.client_windows/com.netty.windows.client_windows.mainApplication
-                    </mainClass>
-                    <!--生成安装程序-->
-                    <generateInstaller>false</generateInstaller>
-                </configuration>
-                <executions>
-                    <execution>
-                        <id>bundling-for-windows</id>
-                        <phase>package</phase>
-                        <goals>
-                            <goal>package</goal>
-                        </goals>
-                        <configuration>
-                            <!--平台-->
-                            <platform>windows</platform>
-                            <!--生成压缩包-->
-                            <createZipball>true</createZipball>
+<!--            <plugin>-->
+<!--                <groupId>io.github.fvarrui</groupId>-->
+<!--                <artifactId>javapackager</artifactId>-->
+<!--                <version>1.7.5</version>-->
+<!--                <configuration>-->
+<!--                    <name>windows代理客户端</name>-->
+<!--                    &lt;!&ndash;生成jre&ndash;&gt;-->
+<!--                    <bundleJre>true</bundleJre>-->
+<!--                    &lt;!&ndash;程序入口文件&ndash;&gt;-->
+<!--                    <mainClass>com.netty.windows.client_windows/com.netty.windows.client_windows.mainApplication-->
+<!--                    </mainClass>-->
+<!--                    &lt;!&ndash;生成安装程序&ndash;&gt;-->
+<!--                    <generateInstaller>false</generateInstaller>-->
+<!--                </configuration>-->
+<!--                <executions>-->
+<!--                    <execution>-->
+<!--                        <id>bundling-for-windows</id>-->
+<!--                        <phase>package</phase>-->
+<!--                        <goals>-->
+<!--                            <goal>package</goal>-->
+<!--                        </goals>-->
+<!--                        <configuration>-->
+<!--                            &lt;!&ndash;平台&ndash;&gt;-->
+<!--                            <platform>windows</platform>-->
+<!--                            &lt;!&ndash;生成压缩包&ndash;&gt;-->
+<!--                            <createZipball>true</createZipball>-->
 
-                            <winConfig>
-                                <!--生成安装程序-->
-                                <generateSetup>true</generateSetup>
-                                <!--生成Msi-->
-                                <generateMsi>true</generateMsi>
-                                <!--标头类型 console-->
-                                <headerType>gui</headerType>
+<!--                            <winConfig>-->
+<!--                                &lt;!&ndash;生成安装程序&ndash;&gt;-->
+<!--                                <generateSetup>true</generateSetup>-->
+<!--                                &lt;!&ndash;生成Msi&ndash;&gt;-->
+<!--                                <generateMsi>true</generateMsi>-->
+<!--                                &lt;!&ndash;标头类型 console&ndash;&gt;-->
+<!--                                <headerType>gui</headerType>-->
 
-                                <wrapJar>true</wrapJar>
-                                <!--文件版本-->
-                                <fileVersion>1.0.0.0</fileVersion>
-                                <!--txt文件版本-->
-                                <txtFileVersion>${project.version}</txtFileVersion>
-                                <!--产品版本-->
-                                <productVersion>1.0.0.0</productVersion>
-                                <!--txt产品版本-->
-                                <txtProductVersion>${project.version}</txtProductVersion>
-                                <!--文件描述-->
-                                <fileDescription>${project.description}</fileDescription>
-                                <!--产品名称-->
-                                <productName>${project.name}</productName>
-                                <!--内部名称-->
-                                <internalName>${project.name}</internalName>
-                                <!--原始文件名-->
-                                <originalFilename>${project.name}.exe</originalFilename>
-                                <!--exe创建工具 winrun4j  launch4j-->
-                                <exeCreationTool>winrun4j</exeCreationTool>
-                                <!--设置模式-->
-                                <setupMode>installForAllUsers</setupMode>
-                                <!--设置语言-->
-                                <setupLanguages>
-                                    <ChineseSimplified>compiler:Languages\ChineseSimplified.isl</ChineseSimplified>
-                                </setupLanguages>
-                                <!--禁用目录页-->
-                                <disableDirPage>false</disableDirPage>
-                                <!--禁用程序组页面-->
-                                <disableProgramGroupPage>false</disableProgramGroupPage>
-                                <!--禁用已完成页面-->
-                                <disableFinishedPage>false</disableFinishedPage>
-                                <!--禁用安装后运行-->
-                                <disableRunAfterInstall>false</disableRunAfterInstall>
-                                <!--禁用欢迎页面-->
-                                <disableWelcomePage>false</disableWelcomePage>
-                                <!--创建桌面图标任务-->
-                                <createDesktopIconTask>true</createDesktopIconTask>
+<!--                                <wrapJar>true</wrapJar>-->
+<!--                                &lt;!&ndash;文件版本&ndash;&gt;-->
+<!--                                <fileVersion>1.0.0.0</fileVersion>-->
+<!--                                &lt;!&ndash;txt文件版本&ndash;&gt;-->
+<!--                                <txtFileVersion>${project.version}</txtFileVersion>-->
+<!--                                &lt;!&ndash;产品版本&ndash;&gt;-->
+<!--                                <productVersion>1.0.0.0</productVersion>-->
+<!--                                &lt;!&ndash;txt产品版本&ndash;&gt;-->
+<!--                                <txtProductVersion>${project.version}</txtProductVersion>-->
+<!--                                &lt;!&ndash;文件描述&ndash;&gt;-->
+<!--                                <fileDescription>${project.description}</fileDescription>-->
+<!--                                &lt;!&ndash;产品名称&ndash;&gt;-->
+<!--                                <productName>${project.name}</productName>-->
+<!--                                &lt;!&ndash;内部名称&ndash;&gt;-->
+<!--                                <internalName>${project.name}</internalName>-->
+<!--                                &lt;!&ndash;原始文件名&ndash;&gt;-->
+<!--                                <originalFilename>${project.name}.exe</originalFilename>-->
+<!--                                &lt;!&ndash;exe创建工具 winrun4j  launch4j&ndash;&gt;-->
+<!--                                <exeCreationTool>winrun4j</exeCreationTool>-->
+<!--                                &lt;!&ndash;设置模式&ndash;&gt;-->
+<!--                                <setupMode>installForAllUsers</setupMode>-->
+<!--                                &lt;!&ndash;设置语言&ndash;&gt;-->
+<!--                                <setupLanguages>-->
+<!--                                    <ChineseSimplified>compiler:Languages\ChineseSimplified.isl</ChineseSimplified>-->
+<!--                                </setupLanguages>-->
+<!--                                &lt;!&ndash;禁用目录页&ndash;&gt;-->
+<!--                                <disableDirPage>false</disableDirPage>-->
+<!--                                &lt;!&ndash;禁用程序组页面&ndash;&gt;-->
+<!--                                <disableProgramGroupPage>false</disableProgramGroupPage>-->
+<!--                                &lt;!&ndash;禁用已完成页面&ndash;&gt;-->
+<!--                                <disableFinishedPage>false</disableFinishedPage>-->
+<!--                                &lt;!&ndash;禁用安装后运行&ndash;&gt;-->
+<!--                                <disableRunAfterInstall>false</disableRunAfterInstall>-->
+<!--                                &lt;!&ndash;禁用欢迎页面&ndash;&gt;-->
+<!--                                <disableWelcomePage>false</disableWelcomePage>-->
+<!--                                &lt;!&ndash;创建桌面图标任务&ndash;&gt;-->
+<!--                                <createDesktopIconTask>true</createDesktopIconTask>-->
 
-                                <!--https://github.com/fvarrui/JavaPackager/blob/master/docs/windows-specific-properties.md-->
-                                <icoFile>${project.basedir}/src/main/resources/img/icon.ico</icoFile>
-                            </winConfig>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
+<!--                                &lt;!&ndash;https://github.com/fvarrui/JavaPackager/blob/master/docs/windows-specific-properties.md&ndash;&gt;-->
+<!--                                <icoFile>${project.basedir}/src/main/resources/img/icon.ico</icoFile>-->
+<!--                            </winConfig>-->
+<!--                        </configuration>-->
+<!--                    </execution>-->
+<!--                </executions>-->
+<!--            </plugin>-->
         </plugins>
     </build>
 </project>
