@@ -44,8 +44,9 @@ public class FillWebSocketProxyHandler extends SimpleChannelInboundHandler<FullH
 
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, FullHttpRequest request) throws Exception {
-        log.info("Received http request: {}", request.uri());
-        MainController.appendToConsole("Received http request :" + request.uri() + "\n");
+        String uri = request.uri();
+        log.info("Received http request: {}", uri);
+        MainController.appendToConsole("Received http request : " + uri + "\n");
         if (websocketChannel == null || !websocketChannel.isActive()) {
             log.debug("首次进行websocket握手，加载websocket通道");
             handleConnect(ctx, request);

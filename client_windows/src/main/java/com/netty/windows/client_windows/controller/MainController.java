@@ -43,7 +43,7 @@ public class MainController {
             new Thread(() -> {
                 try {
                     // 设置注册表配置, 开启系统代理
-                    WindowsConfigEntry.enableProxy(appConfig.getRemoteHost(), appConfig.getRemotePort());
+                    WindowsConfigEntry.enableProxy("127.0.0.1", appConfig.getLocalPort());
                     proxyClientEntry.start(appConfig);
                 } catch (Exception e) {
                     appendToConsole("启动失败: " + e.getMessage() + "\n");
