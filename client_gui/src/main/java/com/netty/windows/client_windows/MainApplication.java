@@ -1,6 +1,7 @@
 package com.netty.windows.client_windows;
 
 import com.dustinredmond.fxtrayicon.FXTrayIcon;
+import com.netty.windows.client_windows.entry.WindowsConfigEntry;
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.fxml.FXMLLoader;
@@ -61,6 +62,7 @@ public class MainApplication extends Application {
                 primaryStage.show();
             });
             exitItem.setOnAction(actionEvent -> {
+                WindowsConfigEntry.disableProxy();
                 // 退出程序
                 System.exit(0);
             });

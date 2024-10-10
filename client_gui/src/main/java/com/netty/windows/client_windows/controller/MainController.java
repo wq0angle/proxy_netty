@@ -5,6 +5,7 @@ import com.netty.windows.client_windows.config.ProxyFileConfig;
 import com.netty.windows.client_windows.entity.AppConfig;
 import com.netty.windows.client_windows.entry.ProxyClientEntry;
 import com.netty.windows.client_windows.entry.WindowsConfigEntry;
+import javafx.application.Platform;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
@@ -94,11 +95,11 @@ public class MainController {
 
             configStage.showAndWait(); // 显示模态窗口
         }catch (Exception e){
-            appendToConsole(e.toString() + "\n");
+            appendToConsole(e + "\n");
         }
     }
 
     public static void appendToConsole(String text) {
-        consoleText.appendText(text);
+        Platform.runLater(() -> consoleText.appendText(text));
     }
 }
