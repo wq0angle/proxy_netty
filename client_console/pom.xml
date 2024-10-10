@@ -11,8 +11,8 @@
     <groupId>com.netty</groupId>
     <artifactId>client_console</artifactId>
     <version>0.0.1-SNAPSHOT</version>
-    <name>client</name>
-    <description>client</description>
+    <name>client_console</name>
+    <description>client_console</description>
 
     <properties>
         <java.version>22</java.version>
