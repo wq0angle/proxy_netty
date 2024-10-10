@@ -5,6 +5,7 @@
 *.ipr
 target/
 /client_gui/dependency-reduced-pom.xml
+/proxy_windows_config.txt
 
 ###project files##
 log/error/
