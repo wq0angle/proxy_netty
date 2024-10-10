@@ -9,7 +9,7 @@
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
     <groupId>com.netty</groupId>
-    <artifactId>client</artifactId>
+    <artifactId>client_console</artifactId>
     <version>0.0.1-SNAPSHOT</version>
     <name>client</name>
     <description>client</description>

@@ -22,8 +22,8 @@
         <module>common</module>
         <module>test</module>
         <module>server</module>
-        <module>client</module>
-        <module>client_windows</module>
+        <module>client_console</module>
+        <module>client_gui</module>
     </modules>
 
     <packaging>pom</packaging>

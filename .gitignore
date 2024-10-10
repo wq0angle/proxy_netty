@@ -4,6 +4,7 @@
 *.iml
 *.ipr
 target/
+/client_gui/dependency-reduced-pom.xml
 
 ###project files##
 log/error/
