@@ -85,8 +85,8 @@ public class ConfigController {
         }
     }
 
+    // 保存到 properties 文件
     private void saveFile() {
-        // 保存到 properties 文件
         try {
             // 获取控件的值并添加至对象
             AppConfig appConfig = buildProxyConfigDTO();

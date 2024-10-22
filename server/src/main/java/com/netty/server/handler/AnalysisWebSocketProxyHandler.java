@@ -58,13 +58,17 @@ public class AnalysisWebSocketProxyHandler extends SimpleChannelInboundHandler<W
 
                     FullHttpResponse response = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.OK);
                     response.headers().set("proxy", "text/plain; charset=UTF-8");
-                    // 创建一个WebSocketFrame，将HTTP响应转换为文本帧数据
+                    // 创建一个WebSocketFrame，将HTTP响应(对应 connect请求 的 response响应 -> 200 ok)转换为文本帧数据
                     WebSocketFrame frame = WebSocketUtil.convertToTextWebSocketFrame(response);
 //                    WebSocketFrame frame = WebSocketUtil.convertToBinaryWebSocketFrame(response);
                     // 写入并刷新到inboundChannel
                     ctx.writeAndFlush(frame);
 
-                    // 移除HTTP处理器并设置透明转发
+                    /*
+                    释放该请求的全局监听的http解析器,不再解析TCP流并透明转发后续生命周期内的所有请求
+                    如果为加密https请求，在完成服务端代理的connect请求回写后,转为SSL隧道模式,与代理客户端同理
+                    只作为代理桥接器使用，不会涉及到请求的操作，如解密请求或过滤请求，当然在websocket中多了一步帧转化的操作
+                     */
                     removeCheckHttpHandler(ctx, HttpServerCodec.class);
                     removeCheckHttpHandler(ctx, HttpObjectAggregator.class);
 
@@ -74,8 +78,9 @@ public class AnalysisWebSocketProxyHandler extends SimpleChannelInboundHandler<W
                     future.channel().writeAndFlush(httpRequest);
                 }
 
-                // 流处理器替换
+                // 流处理器替换,不再涉及请求的操作,只透明转发请求
                 removeCheckHttpHandler(ctx, this.getClass());  // 移除当前处理器
+                // 添加用于透明转发的handler,不过会涉及到加密流和websocket帧的相互转换
                 ctx.pipeline().addLast(new FramePackRelayHandler(future.channel(), ChannelFlowEnum.FUTURE_CHANNEL_FLOW));
             } else {
                 // 连接失败，向客户端发送 500 错误
@@ -99,10 +104,12 @@ public class AnalysisWebSocketProxyHandler extends SimpleChannelInboundHandler<W
             String host;
             int port ;
             if (request.method() == HttpMethod.CONNECT){
+                // 若为 connect请求,url只有域名+端口,不会携带 http:// 或 https:// 的前缀，如：www.baidu.com:443
                 String[] urlArr = request.uri().split(":");
                 host = urlArr[0];
                 port = urlArr.length < 2 ? 80 :Integer.parseInt(urlArr[1]);
             }else {
+                // 非 connect请求 只会存在解密的 https请求 或 http请求 这两种情况,会携带 https:// 或 http:// 前缀,转为 URI对象 处理
                 URI uri = new URI(request.uri());
                 host = uri.getHost();
                 port = uri.getPort();
@@ -112,6 +119,7 @@ public class AnalysisWebSocketProxyHandler extends SimpleChannelInboundHandler<W
                 }
             }
 
+            // HTTP请求处理及转发
             handleHttpRequest(ctx, host, port, request);
 
         } else if (frame instanceof BinaryWebSocketFrame) {

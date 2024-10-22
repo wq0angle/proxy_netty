@@ -58,12 +58,13 @@ public class FillWebSocketProxyHandler extends SimpleChannelInboundHandler<FullH
     }
 
     WebSocketClientHandshaker handshaker;
+
     private void handleConnect(ChannelHandlerContext ctx, FullHttpRequest request) throws URISyntaxException {
         String wsUri;
         // 根据设置，websocket握手是否启用SSL访问
         if (appConfig.getSslRequestEnabled()) {
             wsUri = "wss://";
-        }else {
+        } else {
             wsUri = "ws://";
         }
         URI uri = new URI(wsUri + remoteHost + ":" + remotePort + "/websocket");
@@ -101,7 +102,7 @@ public class FillWebSocketProxyHandler extends SimpleChannelInboundHandler<FullH
                     if (handshakeFuture.isSuccess()) {
                         sendRequestOverWebSocket(ctx, requestNew);
                     } else {
-                        log.error("WebSocket握手失败,{}:{}",remoteHost,remotePort);
+                        log.error("WebSocket握手失败,{}:{}", remoteHost, remotePort);
                         MainController.appendToConsole("WebSocket握手失败 \n");
                         ctx.writeAndFlush(new DefaultFullHttpResponse(
                                 HttpVersion.HTTP_1_1, HttpResponseStatus.INTERNAL_SERVER_ERROR));
@@ -109,7 +110,7 @@ public class FillWebSocketProxyHandler extends SimpleChannelInboundHandler<FullH
                     }
                 });
             } else {
-                log.error("WebSocket连接失败,{}:{}",remoteHost,remotePort);
+                log.error("WebSocket连接失败,{}:{}", remoteHost, remotePort);
                 MainController.appendToConsole("WebSocket连接失败 \n");
                 ctx.writeAndFlush(new DefaultFullHttpResponse(
                         HttpVersion.HTTP_1_1, HttpResponseStatus.INTERNAL_SERVER_ERROR));
@@ -121,23 +122,28 @@ public class FillWebSocketProxyHandler extends SimpleChannelInboundHandler<FullH
     private void sendRequestOverWebSocket(ChannelHandlerContext ctx, FullHttpRequest request) {
         if (websocketChannel != null && websocketChannel.isActive()) {
             // 发送请求到代理服务端
-            Map<String,String> headers = request.headers().entries().stream().collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+            Map<String, String> headers = request.headers().entries().stream().collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
             byte[] byteArray = new byte[request.content().readableBytes()];
             request.content().getBytes(0, byteArray); // 从索引 0 开始读取
-            HttpRequestDTO httpRequestDTO = new HttpRequestDTO(request.uri(),request.method().name(),
+            HttpRequestDTO httpRequestDTO = new HttpRequestDTO(request.uri(), request.method().name(),
                     request.protocolVersion().text(), headers, byteArray);
             WebSocketFrame frame = new TextWebSocketFrame(JSON.toJSONString(httpRequestDTO));
             websocketChannel.writeAndFlush(frame);
 
-            // 立即移除客户端和服务端的channel通道HTTP处理器
+            /*
+            释放该请求的全局监听的http解析器,不再解析TCP流并透明转发后续生命周期内的所有请求
+            如果为加密https请求，在完成服务端代理的connect请求回写后,转为SSL隧道模式
+            只作为代理桥接器使用，不会涉及到请求的操作，如解密请求或过滤请求，当然在websocket中多了一步帧转化的操作
+             */
             removeCheckHttpHandler(websocketChannel.pipeline(), HttpServerCodec.class);
             removeCheckHttpHandler(websocketChannel.pipeline(), HttpObjectAggregator.class);
             removeCheckHttpHandler(ctx.pipeline(), HttpServerCodec.class);
             removeCheckHttpHandler(ctx.pipeline(), HttpObjectAggregator.class);
 
-            //流处理器替换
-            removeCheckHttpHandler(ctx.pipeline(), this.getClass()); //移除当前处理器
-            ctx.channel().pipeline().addLast(new WebSocketRelayHandler(handshaker, websocketChannel,ChannelFlowEnum.FUTURE_CHANNEL_FLOW));
+            // 流处理器替换,不再涉及请求的操作,只透明转发请求
+            removeCheckHttpHandler(ctx.pipeline(), this.getClass());
+            // 添加用于透明转发的handler,不过会涉及到加密流和websocket帧的相互转换
+            ctx.channel().pipeline().addLast(new WebSocketRelayHandler(handshaker, websocketChannel, ChannelFlowEnum.FUTURE_CHANNEL_FLOW));
         }
     }
 
@@ -153,7 +159,7 @@ public class FillWebSocketProxyHandler extends SimpleChannelInboundHandler<FullH
     }
 
     private void removeCheckHttpHandler(ChannelPipeline pipeline, Class<? extends ChannelHandler> clazz) {
-        if (pipeline.get(clazz) != null){
+        if (pipeline.get(clazz) != null) {
             pipeline.remove(clazz);
         }
     }

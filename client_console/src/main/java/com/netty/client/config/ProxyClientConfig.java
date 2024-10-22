@@ -39,7 +39,7 @@ public class ProxyClientConfig {
         int localPort = appConfig.getLocalPort();
         String remoteHost = appConfig.getRemoteHost();
         int remotePort = appConfig.getRemotePort();
-
+        // 启动代理客户端服务
         proxyClientEntry.start(localPort,remoteHost,remotePort);
     }
 
@@ -47,7 +47,6 @@ public class ProxyClientConfig {
         // 修改windows注册表设置,跟随程序启动而自动启用代理,其本质上和手动修改wifi代理的效果是一样的
         String localHost = "127.0.0.1";
         int localPort = appConfig.getLocalPort();
-
         windowsConfigEntry.enableProxy(localHost,localPort);
     }
 

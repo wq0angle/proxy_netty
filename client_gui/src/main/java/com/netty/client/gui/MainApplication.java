@@ -1,7 +1,7 @@
 package com.netty.client.gui;
 
 import com.dustinredmond.fxtrayicon.FXTrayIcon;
-import com.netty.client.gui.entry.WindowsConfigEntry;
+import com.netty.client.gui.entry.SystemConfigEntry;
 import javafx.application.Application;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Scene;
@@ -51,15 +51,16 @@ public class MainApplication extends Application {
             // 添加系统托盘菜单
             MenuItem openItem = new MenuItem("打开");
             MenuItem exitItem = new MenuItem("退出");
-
             trayIcon.addMenuItem(openItem);
             trayIcon.addMenuItem(exitItem);
+
             // 为菜单添加事件处理
             openItem.setOnAction(actionEvent -> {
                 primaryStage.show();
             });
             exitItem.setOnAction(actionEvent -> {
-                WindowsConfigEntry.disableProxy();
+                // 直接关闭系统代理设置
+                SystemConfigEntry.disableProxy();
                 // 退出程序
                 System.exit(0);
             });

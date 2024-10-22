@@ -8,17 +8,26 @@ import java.io.IOException;
 
 @Component
 @Slf4j
-public class WindowsConfigEntry {
+public class SystemConfigEntry {
+    /**
+     * 开启系统代理,连接至本地代理客户端
+     * @param host 连接地址
+     * @param port 连接端口
+     */
     public static void enableProxy(String host, int port) {
         try {
+            //获取系统变量名，用以区分操作系统
             String osName = System.getProperty("os.name").toLowerCase();
             System.setProperty("file.encoding", "UTF-8");
+            //如果是windows操作系统, 执行注册表设置
             if (Strings.isBlank(osName) || osName.contains("win")) {
                 String command = "reg add \"HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Internet Settings\" /v ProxyEnable /t REG_DWORD /d 1 /f";
                 Runtime.getRuntime().exec(command);
                 command = "reg add \"HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Internet Settings\" /v ProxyServer /t REG_SZ /d \"" + host + ":" + port + "\" /f";
                 Runtime.getRuntime().exec(command);
-            }else {
+            }
+            // 如果是mac系统，执行shell脚本
+            else {
                 String command = String.format("networksetup -setwebproxy Wi-Fi %s %d", host, port);
                 Runtime.getRuntime().exec(new String[]{"/bin/bash", "-c", command});
                 command = String.format("networksetup -setwebproxystate Wi-Fi on");
@@ -30,7 +39,7 @@ public class WindowsConfigEntry {
         }
     }
 
-    //程序关闭自动调用
+    //关闭系统代理设置,不再连接到本地代理客户端
     public static void disableProxy() {
         try {
             String osName = System.getProperty("os.name").toLowerCase();

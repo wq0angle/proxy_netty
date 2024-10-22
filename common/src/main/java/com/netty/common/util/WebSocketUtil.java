@@ -20,6 +20,7 @@ public class WebSocketUtil {
 
     private static final SecureRandom RANDOM = new SecureRandom();
 
+    // frame头,用以区分 connect请求 的 200 ok 响应 和 其他透传数据流的响应
     public static String frameHead = "frame-head:";
 
     public static String base64Encode(byte[] bytes) {
@@ -32,6 +33,9 @@ public class WebSocketUtil {
         return base64Encode(keyBytes);
     }
 
+    /**
+     * 将FullHttpResponse 转换成 TextWebSocketFrame
+     */
     public static WebSocketFrame convertToTextWebSocketFrame(FullHttpResponse response) {
         StringBuffer buffer =  new StringBuffer();
         buffer.append(frameHead)
@@ -50,21 +54,34 @@ public class WebSocketUtil {
         return new TextWebSocketFrame(buffer.toString());
     }
 
+    /**
+     * 将FullHttpResponse 转换成 BinaryWebSocketFrame
+     */
     public static WebSocketFrame convertToBinaryWebSocketFrame(FullHttpResponse response) {
         ByteBuf content = convertToWebBuffer(response);
         return new BinaryWebSocketFrame(content);
     }
 
+    /**
+     * 将FullHttpResponse 转换成 ByteBuf
+     */
     public static ByteBuf convertToWebBuffer(FullHttpResponse response){
         ByteBuf content = Unpooled.buffer();
-        String statusLine = frameHead + response.protocolVersion().text() + " " + response.status().toString() + "\r\n";
-        content.writeBytes(statusLine.getBytes(CharsetUtil.UTF_8));
+        StringBuffer buffer =  new StringBuffer();
+        buffer.append(frameHead)
+                .append(response.protocolVersion().text())
+                .append(" ")
+                .append(response.status().toString())
+                .append("\r\n");
         for (Map.Entry<String, String> header : response.headers()) {
-            String headerLine = header.getKey() + ": " + header.getValue() + "\r\n";
-            content.writeBytes(headerLine.getBytes(CharsetUtil.UTF_8));
+            buffer.append(header.getKey())
+                    .append(": ")
+                    .append(header.getValue())
+                    .append("\r\n");
         }
-        content.writeBytes("\r\n".getBytes(CharsetUtil.UTF_8)); // HTTP头部和正文之间的空行
-        content.writeBytes(response.content()); // HTTP响应正文
+        buffer.append("\r\n")
+                .append(response.content().toString(CharsetUtil.UTF_8));
+        content.writeBytes(buffer.toString().getBytes(CharsetUtil.UTF_8));
         return content;
     }
 

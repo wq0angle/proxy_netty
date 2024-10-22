@@ -36,6 +36,7 @@ public class StaticFileServerHandler extends SimpleChannelInboundHandler<FullHtt
             return;
         }
 
+        // 检查文件是否存在
         if (!file.exists() || !file.isFile()) {
             sendError(ctx, HttpResponseStatus.NOT_FOUND);
             return;
@@ -85,6 +86,10 @@ public class StaticFileServerHandler extends SimpleChannelInboundHandler<FullHtt
         }
     }
 
+    /**
+     * 发送错误响应
+     * @param status 错误相应状态码
+     */
     private void sendError(ChannelHandlerContext ctx, HttpResponseStatus status) {
         FullHttpResponse response = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, status);
         ctx.writeAndFlush(response).addListener(ChannelFutureListener.CLOSE);

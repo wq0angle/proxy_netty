@@ -42,6 +42,7 @@ public class FillProxyHandler extends SimpleChannelInboundHandler<FullHttpReques
                 request.protocolVersion(), request.method(), request.uri(), request.content());
 
         forwardRequest.headers().add(request.headers());
+        //添加代理标识,主要用以区分伪装网站访问、代理请求转发请求(connect请求 或 解密的https请求)
         forwardRequest.headers().add("Proxy-Target-Enable", true);
         forwardRequest.content().writeBytes(request.content()); // 添加请求体
 
@@ -73,13 +74,17 @@ public class FillProxyHandler extends SimpleChannelInboundHandler<FullHttpReques
                 future.channel().pipeline().remove(HttpClientCodec.class);
                 future.channel().pipeline().remove(HttpObjectAggregator.class);
 
-                //释放该请求的全局监听的http解析器,不再解析TCP流并透明转发,在connect后面的请求后转换为SSL隧道模式
+                /*
+                释放该请求的全局监听的http解析器,不再解析TCP流并透明转发后续生命周期内的所有请求
+                如果为加密https请求，在完成服务端代理的connect请求回写后,转为SSL隧道模式
+                只作为代理桥接器使用，不会涉及到请求的操作，如解密请求或过滤请求
+                 */
                 ctx.pipeline().remove(HttpServerCodec.class);
                 ctx.pipeline().remove(HttpObjectAggregator.class);
 
-                //流处理器替换
+                //流处理器替换,不再涉及请求的操作,只透明转发请求
                 ctx.pipeline().remove(this.getClass());  // 移除当前处理器
-                ctx.pipeline().addLast(new RelayHandler(future.channel()));  // 添加用于转发的handler
+                ctx.pipeline().addLast(new RelayHandler(future.channel()));  // 添加用于透明转发的handler
 
                 log.debug("send connect request to post , {}",request.uri());
             } else {

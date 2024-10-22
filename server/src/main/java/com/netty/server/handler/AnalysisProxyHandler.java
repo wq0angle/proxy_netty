@@ -68,7 +68,11 @@ public class AnalysisProxyHandler extends SimpleChannelInboundHandler<FullHttpRe
                         response.headers().set("proxy", "text/plain; charset=UTF-8");
                         ctx.writeAndFlush(response);
 
-                        // 移除HTTP处理器并设置透明转发
+                       /*
+                        释放该请求的全局监听的http解析器,不再解析TCP流并透明转发后续生命周期内的所有请求
+                        如果为加密https请求，在完成服务端代理的connect请求回写后,转为SSL隧道模式,与代理客户端同理
+                        只作为代理桥接器使用，不会涉及到请求的操作，如解密请求或过滤请求
+                         */
                         removeCheckHttpHandler(ctx, HttpServerCodec.class);
                         removeCheckHttpHandler(ctx, HttpObjectAggregator.class);
                     }else{
@@ -80,7 +84,7 @@ public class AnalysisProxyHandler extends SimpleChannelInboundHandler<FullHttpRe
                         future.channel().writeAndFlush(forwardRequest);
                     }
 
-                    // 流处理器替换
+                    // 流处理器替换,不再涉及请求的操作,只透明转发请求
                     removeCheckHttpHandler(ctx, this.getClass()); // 移除当前处理器
                     ctx.pipeline().addLast(new RelayHandler(future.channel()));  // 添加用于转发的handler
                 }else {

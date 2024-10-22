@@ -27,7 +27,9 @@ public class ProxyServerConfig {
     }
 
     public void proxyServerHandler() throws Exception {
-        int port = appConfig.getServerPort(); // 设置代理服务器端口号
+        // 设置代理服务器端口号
+        int port = appConfig.getServerPort();
+        // 启动代理服务端服务
         proxyServerEntry.start(port);
     }
 
@@ -36,6 +38,7 @@ public class ProxyServerConfig {
         String ipAddress = "127.0.0.1";
         int port = appConfig.getWebsitePort();
         String websiteDirectory = appConfig.getWebsiteDirectory();
+        // 启动伪装网站服务
         websiteServerEntry.start(ipAddress, port, websiteDirectory.trim());
     }
 

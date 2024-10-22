@@ -2,7 +2,7 @@ package com.netty.client.gui.controller;
 
 import com.netty.client.gui.config.ProxyFileConfig;
 import com.netty.client.gui.entry.ProxyClientEntry;
-import com.netty.client.gui.entry.WindowsConfigEntry;
+import com.netty.client.gui.entry.SystemConfigEntry;
 import com.netty.client.gui.entity.AppConfig;
 import javafx.application.Platform;
 import javafx.event.ActionEvent;
@@ -43,12 +43,12 @@ public class MainController {
             new Thread(() -> {
                 try {
                     // 设置注册表配置, 开启系统代理
-                    WindowsConfigEntry.enableProxy("127.0.0.1", appConfig.getLocalPort());
+                    SystemConfigEntry.enableProxy("127.0.0.1", appConfig.getLocalPort());
                     proxyClientEntry.start(appConfig);
                 } catch (Exception e) {
                     appendToConsole("启动失败: " + e.getMessage() + "\n");
                     // 设置注册表配置, 关闭系统代理
-                    WindowsConfigEntry.disableProxy();
+                    SystemConfigEntry.disableProxy();
                 }
             }).start();
 
@@ -72,7 +72,7 @@ public class MainController {
             appendToConsole("关闭失败: " + e.getMessage() + "\n");
         } finally {
             // 设置注册表配置, 关闭系统代理
-            WindowsConfigEntry.disableProxy();
+            SystemConfigEntry.disableProxy();
         }
     }
 

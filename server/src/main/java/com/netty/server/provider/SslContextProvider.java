@@ -16,6 +16,12 @@ import java.util.Map;
 @Slf4j
 public class SslContextProvider {
 
+    /**
+     * 加载返回所有的证书上下文
+     * @param sslJksPath 证书目录的路径
+     * @param sslJksFilePassword 证书文件名及密码
+     * @return 所有的ssl证书上下文
+     */
     public static Map<String,SslContext> mapSslContext(String sslJksPath, String sslJksFilePassword) throws Exception {
         if (StringUtil.isNullOrEmpty(sslJksPath)){
             throw new Exception("启用了SSL证书监听，sslJksPath 配置不能为空");
@@ -35,17 +41,24 @@ public class SslContextProvider {
             }
             String fileName = filePassword.split(":")[0];
             String password = filePassword.split(":")[1];
+            // 获取证书上下文
             SslContext sslContext = getSslContextByJKS(Path.of(sslJksPath).resolve(fileName), password);
             sslContextMap.put(fileName,sslContext);
         }
         return sslContextMap;
     }
 
-    private static SslContext getSslContextByJKS(Path keyStoreFilePath, String keyStorePassword) throws Exception {
-        log.info("loading SSL file in {}", keyStoreFilePath);
+    /**
+     * 从JKS文件中加载SSL证书上下文
+     * @param keyStoreFullFilePath 证书文件完整路径
+     * @param keyStorePassword 证书密码
+     * @return ssl证书上下文
+     */
+    private static SslContext getSslContextByJKS(Path keyStoreFullFilePath, String keyStorePassword) throws Exception {
+        log.info("loading SSL file in {}", keyStoreFullFilePath);
 
         KeyStore keyStore = KeyStore.getInstance("JKS");
-        try (FileInputStream inputStream = new FileInputStream(keyStoreFilePath.toString())) {
+        try (FileInputStream inputStream = new FileInputStream(keyStoreFullFilePath.toString())) {
             keyStore.load(inputStream, keyStorePassword.toCharArray());
         }
 
@@ -59,6 +72,12 @@ public class SslContextProvider {
                 .build();
     }
 
+    /**
+     * sin 匹配规则,从多个ssl证书上下文中,获取对应域名的SniHandler
+     * @param sslContextMap 所有的ssl证书上下文
+     * @param sinDefaultFile 设置默认的 sin 域名证书文件
+     * @return sin 处理器
+     */
     public static SniHandler getSniHandler(Map<String,SslContext> sslContextMap,String sinDefaultFile) {
         return new SniHandler(hostname -> {
             if (StringUtil.isNullOrEmpty(hostname)){

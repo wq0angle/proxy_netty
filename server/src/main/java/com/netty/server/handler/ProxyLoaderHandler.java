@@ -26,6 +26,7 @@ public class ProxyLoaderHandler extends SimpleChannelInboundHandler<Object> {
 
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, Object msg) throws Exception {
+        // 消息解析判断,进行不同处理器的加载
         switch (msg) {
             // FullHttpRequest类型(包含http/https/websocket握手)
             case FullHttpRequest request:
