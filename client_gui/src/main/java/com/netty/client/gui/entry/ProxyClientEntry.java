@@ -1,9 +1,10 @@
-package com.netty.windows.client_windows.entry;
+package com.netty.client.gui.entry;
 
+import com.netty.client.gui.entity.AppConfig;
 import com.netty.common.enums.ProxyReqEnum;
-import com.netty.windows.client_windows.controller.MainController;
-import com.netty.windows.client_windows.handler.FillProxyHandler;
-import com.netty.windows.client_windows.handler.FillWebSocketProxyHandler;
+import com.netty.client.gui.controller.MainController;
+import com.netty.client.gui.handler.FillProxyHandler;
+import com.netty.client.gui.handler.FillWebSocketProxyHandler;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelInitializer;
@@ -14,11 +15,8 @@ import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.handler.codec.http.HttpObjectAggregator;
 import io.netty.handler.codec.http.HttpServerCodec;
-import io.netty.handler.logging.LogLevel;
-import io.netty.handler.logging.LoggingHandler;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
-import com.netty.windows.client_windows.entity.*;
 
 @Slf4j
 @Component

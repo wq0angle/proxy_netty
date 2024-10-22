@@ -11,7 +11,7 @@
 <?import javafx.geometry.Insets?>
 <VBox spacing="10.0" xmlns="http://javafx.com/javafx"
       xmlns:fx="http://javafx.com/fxml"
-      fx:controller="com.netty.windows.client_windows.controller.ConfigController"
+      fx:controller="com.netty.client.gui.controller.ConfigController"
       prefWidth="320.0" prefHeight="260.0"
       stylesheets="@../css/config-style.css"
 >

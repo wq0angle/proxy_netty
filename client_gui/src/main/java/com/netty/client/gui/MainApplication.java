@@ -1,9 +1,8 @@
-package com.netty.windows.client_windows;
+package com.netty.client.gui;
 
 import com.dustinredmond.fxtrayicon.FXTrayIcon;
-import com.netty.windows.client_windows.entry.WindowsConfigEntry;
+import com.netty.client.gui.entry.WindowsConfigEntry;
 import javafx.application.Application;
-import javafx.application.Platform;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Scene;
 import javafx.scene.control.MenuItem;
@@ -12,9 +11,7 @@ import javafx.stage.Stage;
 import javafx.stage.StageStyle;
 import lombok.extern.slf4j.Slf4j;
 
-import java.io.File;
 import java.io.IOException;
-import java.net.MalformedURLException;
 import java.util.Objects;
 
 @Slf4j

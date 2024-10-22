@@ -1,10 +1,9 @@
-package com.netty.windows.client_windows.controller;
+package com.netty.client.gui.controller;
 
-import com.netty.windows.client_windows.MainApplication;
-import com.netty.windows.client_windows.config.ProxyFileConfig;
-import com.netty.windows.client_windows.entity.AppConfig;
-import com.netty.windows.client_windows.entry.ProxyClientEntry;
-import com.netty.windows.client_windows.entry.WindowsConfigEntry;
+import com.netty.client.gui.config.ProxyFileConfig;
+import com.netty.client.gui.entry.ProxyClientEntry;
+import com.netty.client.gui.entry.WindowsConfigEntry;
+import com.netty.client.gui.entity.AppConfig;
 import javafx.application.Platform;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;

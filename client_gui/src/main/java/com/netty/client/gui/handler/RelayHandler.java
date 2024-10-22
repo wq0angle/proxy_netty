@@ -1,4 +1,4 @@
-package com.netty.windows.client_windows.handler;
+package com.netty.client.gui.handler;
 
 import io.netty.buffer.Unpooled;
 import io.netty.channel.Channel;

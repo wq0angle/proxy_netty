@@ -1,4 +1,4 @@
-package com.netty.windows.client_windows.entity;
+package com.netty.client.gui.entity;
 
 import lombok.Data;
 

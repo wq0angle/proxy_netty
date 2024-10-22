@@ -1,8 +1,8 @@
-package com.netty.windows.client_windows.handler;
+package com.netty.client.gui.handler;
 
+import com.netty.client.gui.controller.MainController;
 import com.netty.common.enums.ChannelFlowEnum;
 import com.netty.common.util.WebSocketUtil;
-import com.netty.windows.client_windows.controller.MainController;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.*;

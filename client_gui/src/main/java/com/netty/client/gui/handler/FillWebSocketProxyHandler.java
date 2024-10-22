@@ -1,8 +1,8 @@
-package com.netty.windows.client_windows.handler;
+package com.netty.client.gui.handler;
 
 import com.alibaba.fastjson.JSON;
-import com.netty.windows.client_windows.controller.MainController;
-import com.netty.windows.client_windows.entity.*;
+import com.netty.client.gui.controller.MainController;
+import com.netty.client.gui.entity.AppConfig;
 import com.netty.common.entity.HttpRequestDTO;
 import com.netty.common.enums.ChannelFlowEnum;
 import io.netty.bootstrap.Bootstrap;

@@ -1,13 +1,10 @@
-package com.netty.windows.client_windows.entry;
+package com.netty.client.gui.entry;
 
-import jakarta.annotation.PreDestroy;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.logging.log4j.util.Strings;
 import org.springframework.stereotype.Component;
 
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStreamReader;
 
 @Component
 @Slf4j

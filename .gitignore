@@ -24,3 +24,4 @@ captures
 .externalNativeBuild
 .cxx
 /client_android/local.properties
+/client_android/gradle/wrapper/gradle-wrapper.jar

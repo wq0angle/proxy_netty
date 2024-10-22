@@ -1,14 +1,14 @@
-package com.netty.windows.client_windows.controller;
+package com.netty.client.gui.controller;
 
+import com.netty.client.gui.config.ProxyFileConfig;
 import com.netty.common.enums.ProxyReqEnum;
-import com.netty.windows.client_windows.entity.AppConfig;
+import com.netty.client.gui.entity.AppConfig;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.TextField;
 import javafx.stage.Stage;
 
-import com.netty.windows.client_windows.config.ProxyFileConfig;
 import org.jetbrains.annotations.NotNull;
 
 import static java.lang.Boolean.FALSE;

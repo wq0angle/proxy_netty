@@ -1,6 +1,6 @@
-package com.netty.windows.client_windows.handler;
+package com.netty.client.gui.handler;
 
-import com.netty.windows.client_windows.entity.*;
+import com.netty.client.gui.entity.AppConfig;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.*;
 import io.netty.channel.socket.SocketChannel;

@@ -1,4 +1,4 @@
-package com.netty.windows.client_windows.config;
+package com.netty.client.gui.config;
 
 import java.io.*;
 import java.lang.reflect.Field;

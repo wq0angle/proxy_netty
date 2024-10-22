@@ -1,4 +1,4 @@
-package com.netty.windows.client_windows;
+package com.netty.client.gui;
 
 import javafx.application.Application;
 
