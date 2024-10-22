@@ -8,7 +8,7 @@ import java.util.Properties;
 public class ProxyFileConfig {
 
     public static final String PROXY_CONFIG_FILE_NAME = "proxy_windows_config.txt";
-    public static final String PROXY_CONFIG_FILE_DESC = "# windows代理客户端配置文件";
+    public static final String PROXY_CONFIG_FILE_DESC = "# GUI代理客户端配置文件";
     public static void saveFile(Object dto,String fileName,String desc) throws IllegalAccessException {
         // 获取程序根目录
         String rootDirectory = System.getProperty("user.dir");
