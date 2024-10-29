@@ -29,4 +29,9 @@ public class AppConfig {
      * 代理类型
      */
     private String proxyType;
+
+    /**
+     * 白名单地址
+     */
+    private String whiteAddress;
 }

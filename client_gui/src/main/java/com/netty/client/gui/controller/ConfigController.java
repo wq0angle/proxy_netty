@@ -5,16 +5,20 @@ import com.netty.common.enums.ProxyReqEnum;
 import com.netty.client.gui.entity.AppConfig;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
-import javafx.scene.control.ComboBox;
-import javafx.scene.control.TextField;
+import javafx.scene.control.*;
 import javafx.stage.Stage;
 
+import javafx.util.Duration;
 import org.jetbrains.annotations.NotNull;
 
 import static java.lang.Boolean.FALSE;
 import static java.lang.Boolean.TRUE;
 
 public class ConfigController {
+    @FXML
+    public Label infoLabel;
+    @FXML
+    private TextArea whiteAddress;
     @FXML
     private ComboBox<String> proxyTypeComboBox;
     @FXML
@@ -28,6 +32,16 @@ public class ConfigController {
 
     @FXML
     public void initialize() {
+        // 创建 Tooltip
+        Tooltip tooltip = new Tooltip("请输入白名单地址，多个地址用分号 (;) 分隔。" + "\r\n" +
+                "可以使用通配符进行匹配配置，通配符使用 * ，可以兼容 域名 / IP" + "\r\n" +
+                "如: 使用 *domain.com 可以匹配到 www.domain.com 、 domain.com/path1/path2 等等，依次类推" + "\r\n" +
+                "如: 使用 192.168* 可以匹配到 192.168.1.100 、 192.168.100.100/path1/path2 等等，依次类推");
+        tooltip.setShowDelay(Duration.seconds(0.1)); // 显示延迟
+        tooltip.setHideDelay(Duration.seconds(30)); // 隐藏延迟
+
+        Tooltip.install(infoLabel, tooltip); // 将 Tooltip 安装到问号标签上
+
         // ComboBox 的初始化
         proxyTypeComboBox.getItems().addAll(ProxyReqEnum.listAllNames()); // 动态添加选项
         sslRequestEnabledComboBox.getItems().addAll(TRUE.toString(), FALSE.toString()); // 动态添加选项
@@ -80,6 +94,7 @@ public class ConfigController {
             remoteHostTextField.setText(appConfig.getRemoteHost());
             proxyServerPort.setText(appConfig.getRemotePort().toString());
             proxyLocalPort.setText(appConfig.getLocalPort().toString());
+            whiteAddress.setText(appConfig.getWhiteAddress());
         } catch (Exception e) {
             MainController.appendToConsole(e.getMessage() + "\n");
         }
@@ -105,6 +120,7 @@ public class ConfigController {
         appConfig.setRemoteHost(remoteHostTextField.getText());
         appConfig.setRemotePort(Integer.parseInt(proxyServerPort.getText()));
         appConfig.setLocalPort(Integer.parseInt(proxyLocalPort.getText()));
+        appConfig.setWhiteAddress(whiteAddress.getText());
         return appConfig;
     }
 }

@@ -1,6 +1,7 @@
 package com.netty.client.gui.entry;
 
 import com.netty.client.gui.entity.AppConfig;
+import com.netty.client.gui.handler.ProxyLoaderHandler;
 import com.netty.common.enums.ProxyReqEnum;
 import com.netty.client.gui.controller.MainController;
 import com.netty.client.gui.handler.FillProxyHandler;
@@ -48,21 +49,11 @@ public class ProxyClientEntry {
                         @Override
                         protected void initChannel(SocketChannel ch) throws Exception {
                             ChannelPipeline p = ch.pipeline();
-                            // 根据设置,选择代理请求类型
-                            if (ProxyReqEnum.parse(mainAppConfig.getProxyType()).equals(ProxyReqEnum.HTTP)) {
-                                // HTTP编码处理器
-                                p.addLast(new HttpServerCodec());
-                                // HTTP消息聚合处理器，避免半包问题
-                                p.addLast(new HttpObjectAggregator(Integer.MAX_VALUE));
-                                p.addLast(new FillProxyHandler(remoteHost, remotePort, mainAppConfig));
-                            } else if (ProxyReqEnum.parse(mainAppConfig.getProxyType()).equals(ProxyReqEnum.WEBSOCKET)) {
-                                p.addLast(new HttpServerCodec());
-                                p.addLast(new HttpObjectAggregator(Integer.MAX_VALUE));
-                                p.addLast(new FillWebSocketProxyHandler(mainAppConfig));
-//                                p.addLast(new FillWebSocketProxyHandler1(appConfig));
-                            } else {
-                                log.error("请检查配置, 不支持的代理类型: {}", mainAppConfig.getProxyType());
-                            }
+                            // HTTP编码处理器
+                            p.addLast(new HttpServerCodec());
+                            // HTTP消息聚合处理器，避免半包问题
+                            p.addLast(new HttpObjectAggregator(Integer.MAX_VALUE));
+                            p.addLast(new ProxyLoaderHandler(mainAppConfig));
                         }
                     });
 

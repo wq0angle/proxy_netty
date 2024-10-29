@@ -18,3 +18,16 @@
 .button:hover {
     -fx-background-color: #39add7; /* 鼠标悬停时的背景颜色 */
 }
+
+
+.tooltip-label {
+    -fx-text-fill: blue; /* 设置字体颜色为蓝色 */
+    -fx-cursor: hand; /* 改变鼠标光标为手型 */
+    -fx-padding: 0 5 0 5; /* 添加内边距 */
+}
+
+.tooltip-label:hover {
+    -fx-font-size: 18px; /* 增大字体 */
+    -fx-font-weight: bold; /* 鼠标悬停时加粗字体 */
+    -fx-text-fill: darkblue; /* 鼠标悬停时改变颜色 */
+}

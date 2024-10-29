@@ -12,7 +12,7 @@
 <VBox spacing="10.0" xmlns="http://javafx.com/javafx"
       xmlns:fx="http://javafx.com/fxml"
       fx:controller="com.netty.client.gui.controller.ConfigController"
-      prefWidth="320.0" prefHeight="260.0"
+      prefWidth="400.0" prefHeight="450.0"
       stylesheets="@../css/config-style.css"
 >
     <padding>
@@ -48,6 +48,12 @@
         <Region HBox.hgrow="ALWAYS"/>
         <ComboBox fx:id="proxyTypeComboBox" prefWidth="120"/>
     </HBox>
+
+    <HBox spacing="10.0">
+        <Label text="白名单地址列表" />
+        <Label text="提示" fx:id="infoLabel" styleClass="tooltip-label" />
+    </HBox>
+    <TextArea fx:id="whiteAddress" VBox.vgrow="ALWAYS" styleClass="text-area"/> <!-- 设置允许扩展高度 -->
 
     <Region prefHeight="30"/>
     <HBox spacing="30.0" alignment="CENTER" >  <!-- 使用 HBox 来水平排列按钮 -->

@@ -44,9 +44,8 @@ public class FillWebSocketProxyHandler extends SimpleChannelInboundHandler<FullH
 
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, FullHttpRequest request) throws Exception {
-        String uri = request.uri();
-        log.info("Received http request: {}", uri);
-        MainController.appendToConsole("Received http request : " + uri + "\n");
+        log.info("received proxy {} request: {}", request.method(), request.uri());
+        MainController.appendToConsole("Received http request : " + request.uri() + "\n");
         if (websocketChannel == null || !websocketChannel.isActive()) {
             log.debug("首次进行websocket握手，加载websocket通道");
             handleConnect(ctx, request);
@@ -110,8 +109,8 @@ public class FillWebSocketProxyHandler extends SimpleChannelInboundHandler<FullH
                     }
                 });
             } else {
-                log.error("WebSocket连接失败,{}:{}", remoteHost, remotePort);
-                MainController.appendToConsole("WebSocket连接失败 \n");
+                log.error("WebSocket连接至代理服务器失败,{}:{}", remoteHost, remotePort);
+                MainController.appendToConsole("WebSocket连接至代理服务器失败," + remoteHost + ":" + remotePort + "\n");
                 ctx.writeAndFlush(new DefaultFullHttpResponse(
                         HttpVersion.HTTP_1_1, HttpResponseStatus.INTERNAL_SERVER_ERROR));
                 ctx.close();

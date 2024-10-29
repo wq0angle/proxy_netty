@@ -1,5 +1,6 @@
 package com.netty.client.gui.handler;
 
+import com.netty.client.gui.controller.MainController;
 import com.netty.client.gui.entity.AppConfig;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.*;
@@ -11,6 +12,8 @@ import io.netty.handler.ssl.SslContextBuilder;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
 
 @Slf4j
 public class FillProxyHandler extends SimpleChannelInboundHandler<FullHttpRequest> {
@@ -32,12 +35,12 @@ public class FillProxyHandler extends SimpleChannelInboundHandler<FullHttpReques
 
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, FullHttpRequest request) throws Exception {
-        log.info("Received {} request: {}", request.method(), request.uri());
+        log.info("received proxy {} request: {}", request.method(), request.uri());
+        MainController.appendToConsole("Received http request : " + request.uri() + "\n");
         handleConnect(ctx, request);
     }
 
-    private void handleConnect(ChannelHandlerContext ctx, FullHttpRequest request) throws InterruptedException {
-
+    private void handleConnect(ChannelHandlerContext ctx, FullHttpRequest request) {
         FullHttpRequest forwardRequest = new DefaultFullHttpRequest(
                 request.protocolVersion(), request.method(), request.uri(), request.content());
 
@@ -79,19 +82,28 @@ public class FillProxyHandler extends SimpleChannelInboundHandler<FullHttpReques
                 如果为加密https请求，在完成服务端代理的connect请求回写后,转为SSL隧道模式
                 只作为代理桥接器使用，不会涉及到请求的操作，如解密请求或过滤请求
                  */
-                ctx.pipeline().remove(HttpServerCodec.class);
-                ctx.pipeline().remove(HttpObjectAggregator.class);
+                removeCheckHttpHandler(ctx,HttpServerCodec.class);
+                removeCheckHttpHandler(ctx,HttpObjectAggregator.class);
 
                 //流处理器替换,不再涉及请求的操作,只透明转发请求
-                ctx.pipeline().remove(this.getClass());  // 移除当前处理器
+                removeCheckHttpHandler(ctx,this.getClass());  // 移除当前处理器
                 ctx.pipeline().addLast(new RelayHandler(future.channel()));  // 添加用于透明转发的handler
 
                 log.debug("send connect request to post , {}",request.uri());
             } else {
+                log.error("Http连接至代理服务器失败,{}:{}", remoteHost, remotePort);
+                MainController.appendToConsole("Http连接至代理服务器失败," + remoteHost + ":" + remotePort + "\n");
                 ctx.writeAndFlush(new DefaultFullHttpResponse(
                         HttpVersion.HTTP_1_1, HttpResponseStatus.INTERNAL_SERVER_ERROR));
             }
         });
+    }
+
+    private void removeCheckHttpHandler(ChannelHandlerContext ctx, Class<? extends ChannelHandler> clazz) {
+        if (ctx.pipeline().get(clazz) != null){
+            log.debug("remove check http handler");
+            ctx.pipeline().remove(clazz);
+        }
     }
 
     @Override
@@ -100,6 +112,8 @@ public class FillProxyHandler extends SimpleChannelInboundHandler<FullHttpReques
             log.debug("Connection was reset by the peer");
         } else {
             log.error("Error occurred in FillProxyHandler", cause);
+            MainController.appendToConsole("Error occurred in FillProxyHandler \n");
+
         }
         ctx.close();
     }
