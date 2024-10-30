@@ -55,7 +55,7 @@ public class ProxyLoaderHandler extends SimpleChannelInboundHandler<FullHttpRequ
         if (StringUtil.isNullOrEmpty(whiteAddress)) {
             return false;
         }
-
+        whiteAddress = whiteAddress.trim().replaceAll("\n","").replaceAll("；", ";");
         // 提取主机名部分
         String hostName = host.replace("http://","")
                 .replace("https://","")

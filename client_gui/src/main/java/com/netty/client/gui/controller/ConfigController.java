@@ -94,7 +94,8 @@ public class ConfigController {
             remoteHostTextField.setText(appConfig.getRemoteHost());
             proxyServerPort.setText(appConfig.getRemotePort().toString());
             proxyLocalPort.setText(appConfig.getLocalPort().toString());
-            whiteAddress.setText(appConfig.getWhiteAddress());
+            // @n 处理换行 转义为 \n
+            whiteAddress.setText((appConfig.getWhiteAddress() + "").replaceAll("@n", "\n"));
         } catch (Exception e) {
             MainController.appendToConsole(e.getMessage() + "\n");
         }
@@ -120,7 +121,8 @@ public class ConfigController {
         appConfig.setRemoteHost(remoteHostTextField.getText());
         appConfig.setRemotePort(Integer.parseInt(proxyServerPort.getText()));
         appConfig.setLocalPort(Integer.parseInt(proxyLocalPort.getText()));
-        appConfig.setWhiteAddress(whiteAddress.getText());
+        // \n 转义替换为 @n 处理换行存储以兼容 properties 文件
+        appConfig.setWhiteAddress((whiteAddress.getText() + "").replaceAll("\n","@n"));
         return appConfig;
     }
 }
