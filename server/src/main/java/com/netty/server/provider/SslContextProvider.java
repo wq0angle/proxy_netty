@@ -23,10 +23,10 @@ public class SslContextProvider {
      * @return 所有的ssl证书上下文
      */
     public static Map<String,SslContext> mapSslContext(String sslJksPath, String sslJksFilePassword) throws Exception {
-        if (StringUtil.isNullOrEmpty(sslJksPath)){
+        if (StringUtil.isNullOrEmpty(sslJksPath)) {
             throw new Exception("启用了SSL证书监听，sslJksPath 配置不能为空");
         }
-        if (StringUtil.isNullOrEmpty(sslJksFilePassword)){
+        if (StringUtil.isNullOrEmpty(sslJksFilePassword)) {
             throw new Exception("启用了SSL证书监听，sslJksFilePassword 配置不能为空");
         }
         sslJksPath = sslJksPath.trim();
@@ -36,7 +36,7 @@ public class SslContextProvider {
 
         for (String filePassword : sslJksFilePasswordArr) {
             filePassword = filePassword.trim();
-            if (filePassword.split(":").length != 2){
+            if (filePassword.split(":").length != 2) {
                 throw new Exception("sslJksFilePassword 配置格式错误，请检查");
             }
             String fileName = filePassword.split(":")[0];
@@ -79,17 +79,31 @@ public class SslContextProvider {
      * @return sin 处理器
      */
     public static SniHandler getSniHandler(Map<String,SslContext> sslContextMap,String sinDefaultFile) {
-        return new SniHandler(hostname -> {
-            if (StringUtil.isNullOrEmpty(hostname)){
-                log.info("SNI Fallback, hostname is null");
+        return new SniHandler(hostName -> {
+            if (StringUtil.isNullOrEmpty(hostName)){
+                log.info("SNI Fallback, hostName is null");
                 return sslContextMap.get(sinDefaultFile);
             }
+            String[] hostNameArr = hostName.split("\\.");
+            if (hostNameArr.length < 2) {
+                log.info("SNI Fallback, hostName Illegal format");
+                hostName = hostNameArr[0];
+            } else {
+                hostName = hostNameArr[hostNameArr.length - 2] + hostNameArr[hostNameArr.length - 1];
+            }
             String filterHostname = sslContextMap.keySet()
-                    .stream().map(p -> p.replace("www.", ""))
-                    .filter(hostname::contains)
+                    .stream().map(p -> {
+                        String[] pArr = p.replace(".jks","").split("\\.");
+                        if (pArr.length < 2) {
+                            log.info("SNI Fallback, sslContext fileName Illegal format");
+                            return p;
+                        }
+                        return pArr[pArr.length - 2] + pArr[pArr.length - 1];
+                    })
+                    .filter(hostName::contains)
                     .findFirst().orElse(null);
 
-            if (StringUtil.isNullOrEmpty(filterHostname)){
+            if (StringUtil.isNullOrEmpty(filterHostname)) {
                 log.info("SNI Fallback, missed hostname");
                 return sslContextMap.get(sinDefaultFile);
             }
