@@ -12,6 +12,7 @@ import java.io.FileInputStream;
 import java.nio.file.Path;
 import java.security.KeyStore;
 import java.util.Map;
+import java.util.Objects;
 
 @Slf4j
 public class SslContextProvider {
@@ -91,16 +92,14 @@ public class SslContextProvider {
             } else {
                 hostName = hostNameArr[hostNameArr.length - 2] + hostNameArr[hostNameArr.length - 1];
             }
+            String finalHostName = hostName;
             String filterHostname = sslContextMap.keySet()
-                    .stream().map(p -> {
-                        String[] pArr = p.replace(".jks","").split("\\.");
-                        if (pArr.length < 2) {
-                            log.info("SNI Fallback, sslContext fileName Illegal format");
-                            return p;
-                        }
-                        return pArr[pArr.length - 2] + pArr[pArr.length - 1];
+                    .stream()
+                    .filter(fileNameKey -> {
+                        String[] keyNameArr = fileNameKey.replace(".jks", "").split("\\.");
+                        String keyName = keyNameArr.length == 1 ? keyNameArr[0] : keyNameArr[keyNameArr.length - 2] + keyNameArr[keyNameArr.length - 1];
+                        return Objects.equals(finalHostName, keyName);
                     })
-                    .filter(hostName::contains)
                     .findFirst().orElse(null);
 
             if (StringUtil.isNullOrEmpty(filterHostname)) {
