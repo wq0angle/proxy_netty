@@ -99,8 +99,7 @@ public class SslContextProvider {
                         String[] keyNameArr = fileNameKey.replace(".jks", "").split("\\.");
                         String keyName = keyNameArr.length == 1 ? keyNameArr[0] : keyNameArr[keyNameArr.length - 2] + keyNameArr[keyNameArr.length - 1];
                         return Objects.equals(finalHostName, keyName);
-                    })
-                    .findFirst().orElse(null);
+                    }).findFirst().orElse(null);
 
             if (StringUtil.isNullOrEmpty(filterHostname)) {
                 log.info("SNI Fallback, missed hostname");
