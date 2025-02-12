@@ -70,6 +70,8 @@ init_dir() {
             echo "脚本已经在运行中，避免循环启动。"
             exit 1
         fi
+        else
+           bash "$install_script_file"
     fi
 }
 
