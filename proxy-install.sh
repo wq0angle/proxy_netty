@@ -14,6 +14,9 @@ proxy_service_path="${root_dir}/proxy-server-auto";
 proxy_service_file="${proxy_service_path}.zip";
 proxy_service_url="https://github.com/wq0angle/proxy_netty/releases/download/master-server/proxy-server-auto.zip";
 
+# 安装脚本目录
+install_script_file="${root_dir/proxy-install.sh}"
+
 # 配置文件路径
 CONFIG_FILE="${proxy_service_path}/proxy-server.properties"
 
@@ -47,6 +50,24 @@ init_dir() {
         mkdir -p "$root_dir"
         echo "目录 $root_dir 已创建"
     fi
+
+    # 检查自动化部署脚本是否存在
+    if [ ! -d "$install_script_file" ]; then
+        echo "未检测到自动化部署脚本, 正在下载";
+        curl -s https://raw.githubusercontent.com/wq0angle/proxy_netty/master/proxy-install.sh | bash
+        if [ $? -ne 0 ]; then
+            echo "自动化部署脚本 下载失败，请检查网络连接和当前用户目录权限。"
+            exit 1
+        fi
+    fi
+
+    # 检查脚本是否正在运行, 如果是, 则退出 避免循环启动
+    if [ -f "$install_script_file" ]; then
+        if grep -q "check_running" "$install_script_file"; then
+            echo "脚本已经在运行中，避免循环启动。"
+            exit 1
+        fi
+    fi
 }
 
 # 代理服务端程序安装
@@ -65,9 +86,9 @@ install_proxy_service() {
         echo "export proxy_start=${proxy_service_path}/proxy_start.sh" >> ~/.bashrc
         echo "export proxy_stop=${proxy_service_path}/proxy_stop.sh" >> ~/.bashrc
         echo "export proxy_status=${proxy_service_path}/nohup.out" >> ~/.bashrc
-        # echo "alias proxy start=\"\$proxy_start\"" >> ~/.bashrc
-        # echo "alias proxy stop=\"\$proxy_stop\"" >> ~/.bashrc
-        # echo "alias proxy status=\"\$proxy_status\"" >> ~/.bashrc
+        # echo "alias proxy-start=\"\$proxy_start\"" >> ~/.bashrc
+        # echo "alias proxy-stop=\"\$proxy_stop\"" >> ~/.bashrc
+        # echo "alias proxy-status=\"\$proxy_status\"" >> ~/.bashrc
         commandSetting;
         echo "脚本环境变量设置成功。"
     fi
