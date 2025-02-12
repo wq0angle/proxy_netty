@@ -52,7 +52,7 @@ init_dir() {
     fi
 
     # 检查自动化部署脚本是否存在
-    if [ ! -d "$install_script_file" ]; then
+    if [ ! -f "$install_script_file" ]; then
         echo "未检测到自动化部署脚本, 正在下载";
         wget -s -o "$install_script_file" https://raw.githubusercontent.com/wq0angle/proxy_netty/master/proxy-install.sh
         if [ $? -ne 0 ]; then
