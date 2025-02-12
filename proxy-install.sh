@@ -54,10 +54,13 @@ init_dir() {
     # 检查自动化部署脚本是否存在
     if [ ! -d "$install_script_file" ]; then
         echo "未检测到自动化部署脚本, 正在下载";
-        curl -s https://raw.githubusercontent.com/wq0angle/proxy_netty/master/proxy-install.sh | bash
+        wget -s -o "$install_script_file" https://raw.githubusercontent.com/wq0angle/proxy_netty/master/proxy-install.sh
         if [ $? -ne 0 ]; then
             echo "自动化部署脚本 下载失败，请检查网络连接和当前用户目录权限。"
             exit 1
+        else
+            echo "自动化部署脚本 下载成功。"
+            chmod +x "$install_script_file"
         fi
     fi
 
