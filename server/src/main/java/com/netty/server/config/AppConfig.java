@@ -7,7 +7,7 @@ import org.springframework.context.annotation.PropertySource;
 import org.springframework.stereotype.Component;
 
 @Configuration
-@PropertySource("file:${user.dir}/proxy-server.properties")
+@PropertySource("file:${config.dir}/proxy-server.properties")
 @Data
 @Component
 public class AppConfig {
