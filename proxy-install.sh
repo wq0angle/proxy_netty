@@ -51,28 +51,28 @@ init_dir() {
         echo "目录 $root_dir 已创建"
     fi
 
-    # 检查自动化部署脚本是否存在
-    if [ ! -f "$install_script_file" ]; then
-        echo "未检测到自动化部署脚本, 正在下载";
-        wget -o "$install_script_file" https://raw.githubusercontent.com/wq0angle/proxy_netty/master/proxy-install.sh
-        if [ $? -ne 0 ]; then
-            echo "自动化部署脚本 下载失败，请检查网络连接和当前用户目录权限。"
-            exit 1
-        else
-            echo "自动化部署脚本 下载成功。"
-            chmod +x "$install_script_file"
-        fi
-    fi
-
-    # 检查脚本是否正在运行, 如果是, 则退出 避免循环启动
-    if [ -f "$install_script_file" ]; then
-        if grep -q "check_running" "$install_script_file"; then
-            echo "脚本已经在运行中，避免循环启动。"
-            exit 1
-        fi
-        else
-           bash "$install_script_file"
-    fi
+#    # 检查自动化部署脚本是否存在
+#    if [ ! -f "$install_script_file" ]; then
+#        echo "未检测到自动化部署脚本, 正在下载";
+#        wget -o "$install_script_file" https://raw.githubusercontent.com/wq0angle/proxy_netty/master/proxy-install.sh
+#        if [ $? -ne 0 ]; then
+#            echo "自动化部署脚本 下载失败，请检查网络连接和当前用户目录权限。"
+#            exit 1
+#        else
+#            echo "自动化部署脚本 下载成功。"
+#            chmod +x "$install_script_file"
+#        fi
+#    fi
+#
+#    # 检查脚本是否正在运行, 如果是, 则退出 避免循环启动
+#    if [ -f "$install_script_file" ]; then
+#        if grep -q "check_running" "$install_script_file"; then
+#            echo "脚本已经在运行中，避免循环启动。"
+#            exit 1
+#        fi
+#        else
+#           bash "$install_script_file"
+#    fi
 }
 
 # 代理服务端程序安装
