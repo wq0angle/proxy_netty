@@ -15,7 +15,7 @@ proxy_service_file="${proxy_service_path}.zip";
 proxy_service_url="https://github.com/wq0angle/proxy_netty/releases/download/master-server/proxy-server-auto.zip";
 
 # 安装脚本目录
-install_script_file="${root_dir}/proxy-install.sh}"
+install_script_file="${root_dir}/proxy-install.sh"
 
 # 配置文件路径
 CONFIG_FILE="${proxy_service_path}/proxy-server.properties"
