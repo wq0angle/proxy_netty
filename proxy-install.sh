@@ -70,7 +70,7 @@ init_dir() {
     fi
 
     # 执行来源检测模块
-    if [[ "$current_script_path" == "$install_script_file" ]]; then
+    if [[ "$current_script_path" = "$install_script_file" ]]; then
         echo "本地脚本执行模式 (稳定版本) (路径: $current_script_path)"
     else
         echo "线上热更新执行模式 (临时版本) (临时路径: $current_script_path)"
