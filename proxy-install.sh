@@ -69,14 +69,22 @@ init_dir() {
         fi
     fi
 
+
+}
+
+# 脚本检测
+check_install_script() {
     # 执行来源检测模块
     if [[ "$current_script_path" = "$install_script_file" ]]; then
-        echo "本地脚本执行模式 (稳定版本) (路径: $current_script_path)"
+        echo "
+    本地脚本执行模式 (稳定版本) (路径: $current_script_path)
+        "
     else
-        echo "线上热更新执行模式 (临时版本) (临时路径: $current_script_path)
+        echo "
+    线上热更新执行模式 (临时版本) | 临时路径: $current_script_path | 存放路径: $install_script_file
 注意:
-1.临时脚本将在执行完成后自动清除, 建议使用 proxy install 命令维护
-2.建议使用 'proxy update' 命令进行持久化更新脚本
+    1.临时脚本将在执行完成后自动清除, 需要使用 proxy install 命令重新安装维护
+    2.建议使用 'proxy update' 命令进行持久化更新脚本
 "
         exit 1
     fi
@@ -127,7 +135,7 @@ proxy() {
             \"\$proxy_install\"
             ;;
         update)
-            echo '正在从Github更新...'
+            echo '正在从Github更新... | 临时路径: $current_script_path | 存放路径: $install_script_file'
             wget -o -s $install_script_file $install_script_url
             ;;
         start)
