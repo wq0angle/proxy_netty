@@ -73,9 +73,11 @@ init_dir() {
     if [[ "$current_script_path" = "$install_script_file" ]]; then
         echo "本地脚本执行模式 (稳定版本) (路径: $current_script_path)"
     else
-        echo "线上热更新执行模式 (临时版本) (临时路径: $current_script_path)"
-        echo "注意: 临时脚本将在执行完成后自动清除, 建议使用 proxy install 命令维护"
-        echo "建议使用 'proxy update' 命令进行持久化更新脚本"
+        echo "线上热更新执行模式 (临时版本) (临时路径: $current_script_path)
+注意:
+1.临时脚本将在执行完成后自动清除, 建议使用 proxy install 命令维护
+2.建议使用 'proxy update' 命令进行持久化更新脚本
+"
         exit 1
     fi
 }
@@ -374,9 +376,10 @@ annotate() {
 
 命令:
     1. 运行安装脚本：proxy install
-    2. 启动代理服务：proxy start
-    3. 停止代理服务：proxy stop
-    4. 查看代理服务状态：proxy status
+    2. 运行更新脚本：proxy update
+    3. 启动代理服务：proxy start
+    4. 停止代理服务：proxy stop
+    5. 查看代理服务状态：proxy status
 
 "
 }
