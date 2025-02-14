@@ -35,7 +35,7 @@ init() {
     init_dir;
 
     # 检测系统需要的组件
-    check_installk_unzip;
+    check_install_unzip;
     check_install_jdk;
 
     # 代理服务端程序压缩包下载
@@ -145,7 +145,7 @@ proxy() {
             \"\$proxy_stop\"
             ;;
         status)
-            tail -n 10 -f \"\$proxy_status\" | less
+            tail -n 50 \"\$proxy_status\" | less +F
             ;;
         *)
             echo \"请使用正确命令: proxy { install | update | start | stop | status }\"
@@ -239,7 +239,7 @@ check_install_jdk() {
 }
 
 # zip解压组件检测并安装
-check_installk_unzip() {
+check_install_unzip() {
     if ! command -v unzip &> /dev/null 
     then
         echo "unzip 未安装，正在安装..."
