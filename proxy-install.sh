@@ -16,6 +16,11 @@ proxy_service_url="https://github.com/wq0angle/proxy_netty/releases/download/mas
 
 # 安装脚本目录
 install_script_file="${root_dir}/proxy-install.sh"
+# 脚本链接
+install_script_url="https://raw.githubusercontent.com/wq0angle/proxy_netty/master/proxy-install.sh"
+
+# 当前执行脚本路径
+current_script_path="$(realpath "$0")"
 
 # 配置文件路径
 CONFIG_FILE="${proxy_service_path}/proxy-server.properties"
@@ -54,7 +59,7 @@ init_dir() {
     # 检查自动化部署脚本是否存在
     if [ ! -f "$install_script_file" ]; then
         echo "未检测到自动化部署脚本, 正在下载";
-        wget -o "$install_script_file" https://raw.githubusercontent.com/wq0angle/proxy_netty/master/proxy-install.sh
+        wget -o -s $install_script_file $install_script_url
         if [ $? -ne 0 ]; then
             echo "自动化部署脚本 下载失败，请检查网络连接和当前用户目录权限。"
             exit 1
@@ -62,6 +67,16 @@ init_dir() {
             echo "自动化部署脚本 下载成功。"
             chmod +x "$install_script_file"
         fi
+    fi
+
+    # 执行来源检测模块
+    if [[ "$current_script_path" == "$install_script_file" ]]; then
+        echo "本地脚本执行模式 (稳定版本) (路径: $current_script_path)"
+    else
+        echo "线上热更新执行模式 (临时版本) (临时路径: $current_script_path)"
+        echo "注意: 临时脚本将在执行完成后自动清除, 建议使用 proxy install 命令维护"
+        echo "建议使用 'proxy update' 命令进行持久化更新脚本"
+        exit 1
     fi
 }
 
@@ -88,9 +103,10 @@ install_proxy_service() {
         # echo "alias proxy-status=\"\$proxy_status\"" >> ~/.bashrc
         commandSetting;
         echo "脚本环境变量设置成功。"
+        exit 1
     fi
 
-     # 立即加载环境变量
+     # 添加文件权限并立即加载环境变量
     chmod +x $proxy_install
     chmod +x $proxy_start
     chmod +x $proxy_stop
@@ -106,7 +122,11 @@ commandSetting() {
 proxy() {
     case \"\$1\" in
         install)
-            \"\proxy_install\"
+            \"\$proxy_install\"
+            ;;
+        update)
+            echo '正在从Github更新...'
+            wget -o -s $install_script_file $install_script_url
             ;;
         start)
             \"\$proxy_start\"
@@ -118,7 +138,7 @@ proxy() {
             tail -f \"\$proxy_status\" | less
             ;;
         *)
-            echo \"请使用正确命令: proxy { start | stop | status }\"
+            echo \"请使用正确命令: proxy { install | update | start | stop | status }\"
             ;;
     esac
 }" >> ~/.bashrc
@@ -348,7 +368,6 @@ config_Setting() {
 
 annotate() {
     echo "
-
 提示:
     在使用此自动化安装脚本部署代理服务器时，若使用SSL证书加密，则需要提前设置好 DNS 的域名映射，并且需要自行购买SSL证书，或者自己解决，SSL上传或部署到服务器上，按照脚本按照提示设置到SSL证书文件的目录即可。
     目前支持的SSL证书仅支持 *.JKS 加密证书，若使用 CDN + websocket 方式，那么就必须要使用SSL证书来代理了，CDN代理商的SSL证书也需要自行部署解决。
