@@ -34,7 +34,7 @@ init() {
     check_install_jdk;
 
     # 代理服务端程序压缩包下载
-    download_porxy_service
+    download_proxy_service
 
     # 代理服务端程序压缩包下载及安装
     install_proxy_service;
@@ -51,28 +51,18 @@ init_dir() {
         echo "目录 $root_dir 已创建"
     fi
 
-#    # 检查自动化部署脚本是否存在
-#    if [ ! -f "$install_script_file" ]; then
-#        echo "未检测到自动化部署脚本, 正在下载";
-#        wget -o "$install_script_file" https://raw.githubusercontent.com/wq0angle/proxy_netty/master/proxy-install.sh
-#        if [ $? -ne 0 ]; then
-#            echo "自动化部署脚本 下载失败，请检查网络连接和当前用户目录权限。"
-#            exit 1
-#        else
-#            echo "自动化部署脚本 下载成功。"
-#            chmod +x "$install_script_file"
-#        fi
-#    fi
-#
-#    # 检查脚本是否正在运行, 如果是, 则退出 避免循环启动
-#    if [ -f "$install_script_file" ]; then
-#        if grep -q "check_running" "$install_script_file"; then
-#            echo "脚本已经在运行中，避免循环启动。"
-#            exit 1
-#        fi
-#        else
-#           bash "$install_script_file"
-#    fi
+    # 检查自动化部署脚本是否存在
+    if [ ! -f "$install_script_file" ]; then
+        echo "未检测到自动化部署脚本, 正在下载";
+        wget -o "$install_script_file" https://raw.githubusercontent.com/wq0angle/proxy_netty/master/proxy-install.sh
+        if [ $? -ne 0 ]; then
+            echo "自动化部署脚本 下载失败，请检查网络连接和当前用户目录权限。"
+            exit 1
+        else
+            echo "自动化部署脚本 下载成功。"
+            chmod +x "$install_script_file"
+        fi
+    fi
 }
 
 # 代理服务端程序安装
@@ -88,9 +78,11 @@ install_proxy_service() {
         echo "脚本环境变量已设置。"
     else
         echo "脚本设置环境变量..."
+        echo "export proxy_install=${install_script_file}" >> ~/.bashrc
         echo "export proxy_start=${proxy_service_path}/proxy_start.sh" >> ~/.bashrc
         echo "export proxy_stop=${proxy_service_path}/proxy_stop.sh" >> ~/.bashrc
         echo "export proxy_status=${proxy_service_path}/nohup.out" >> ~/.bashrc
+        # echo "alias proxy-install=\"\$proxy_install\"" >> ~/.bashrc
         # echo "alias proxy-start=\"\$proxy_start\"" >> ~/.bashrc
         # echo "alias proxy-stop=\"\$proxy_stop\"" >> ~/.bashrc
         # echo "alias proxy-status=\"\$proxy_status\"" >> ~/.bashrc
@@ -112,6 +104,9 @@ commandSetting() {
 # 定义 proxy 命令函数
 proxy() {
     case \"\$1\" in
+        install)
+            \"\proxy_install\"
+            ;;
         start)
             \"\$proxy_start\"
             ;;
@@ -129,7 +124,7 @@ proxy() {
 }
 
 # 代理服务端程序压缩包下载
-download_porxy_service() {
+download_proxy_service() {
     # 检查文件是否已下载
     if [ ! -f "$proxy_service_file" ]; then
         echo "代理服务端程序 压缩包 未下载，开始下载... | $proxy_service_url"
@@ -351,9 +346,19 @@ config_Setting() {
 }
 
 annotate() {
-    echo "提示:
-在使用此自动化安装脚本部署代理服务器时，若使用SSL证书加密，则需要提前设置好 DNS 的域名映射，并且需要自行购买SSL证书，或者自己解决，SSL上传或部署到服务器上，按照脚本按照提示设置到SSL证书文件的目录即可。
-目前支持的SSL证书仅支持 *.JKS 加密证书，若使用 CDN + websocket 方式，那么就必须要使用SSL证书来代理了，CDN代理商的SSL证书也需要自行部署解决。"
+    echo "
+
+提示:
+    在使用此自动化安装脚本部署代理服务器时，若使用SSL证书加密，则需要提前设置好 DNS 的域名映射，并且需要自行购买SSL证书，或者自己解决，SSL上传或部署到服务器上，按照脚本按照提示设置到SSL证书文件的目录即可。
+    目前支持的SSL证书仅支持 *.JKS 加密证书，若使用 CDN + websocket 方式，那么就必须要使用SSL证书来代理了，CDN代理商的SSL证书也需要自行部署解决。
+
+命令:
+    1. 运行安装脚本：proxy install
+    2. 启动代理服务：proxy start
+    3. 停止代理服务：proxy stop
+    4. 查看代理服务状态：proxy status
+
+"
 }
 
 # 执行初始化
