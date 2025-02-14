@@ -145,7 +145,7 @@ proxy() {
             \"\$proxy_stop\"
             ;;
         status)
-            tail -f \"\$proxy_status\" | less
+            tail -n 10 -f \"\$proxy_status\" | less
             ;;
         *)
             echo \"请使用正确命令: proxy { install | update | start | stop | status }\"
