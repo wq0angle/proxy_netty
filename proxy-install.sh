@@ -91,6 +91,7 @@ install_proxy_service() {
     fi
 
      # 立即加载环境变量
+    chmod +x $proxy_install
     chmod +x $proxy_start
     chmod +x $proxy_stop
     chmod +x $proxy_status
