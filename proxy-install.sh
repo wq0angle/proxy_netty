@@ -80,11 +80,11 @@ check_install_script() {
     # 执行来源检测模块
     if [[ "$current_script_path" = "$install_script_file" ]]; then
         echo "
-    本地脚本执行模式 (稳定版本) (路径: $current_script_path)
+本地脚本执行模式 (稳定版本) (路径: $current_script_path)
         "
     else
         echo "
-    线上热更新执行模式 (临时版本) | 临时路径: $current_script_path | 存放路径: $install_script_file
+线上热更新执行模式 (临时版本) | 临时路径: $current_script_path | 存放路径: $install_script_file
 注意:
     1.临时脚本将在执行完成后自动清除, 需要使用 proxy install 命令重新安装维护
     2.建议使用 'proxy update' 命令进行持久化更新脚本
@@ -120,10 +120,7 @@ install_proxy_service() {
     fi
 
      # 添加文件权限并立即加载环境变量
-    chmod +x $proxy_install
-    chmod +x $proxy_start
-    chmod +x $proxy_stop
-    chmod +x $proxy_status
+    chmod -R +x "$root_dir"
     source ~/.bashrc
      
     echo "服务端代理程序 安装已完成"
