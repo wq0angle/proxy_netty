@@ -43,6 +43,9 @@ init() {
 
     # 代理服务端程序压缩包下载及安装
     install_proxy_service;
+
+    # 检测脚本
+    check_install_script;
     
     # 设置代理服务端程序配置
     config_Setting;
