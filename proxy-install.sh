@@ -71,8 +71,6 @@ init_dir() {
             chmod +x "$install_script_file"
         fi
     fi
-
-
 }
 
 # 脚本检测
@@ -173,7 +171,7 @@ download_proxy_service() {
     echo "解压 代理服务端程序 压缩包..."
     unzip -o $proxy_service_file -d $proxy_service_path
     if [ $? -ne 0 ]; then
-        echo "代理服务端程序 压缩包 失败。 删除问题安装包，请重新下载"
+        echo "代理服务端程序 压缩包 解压失败。 删除问题安装包，请重新下载"
         rm -rf $proxy_service_file;
         exit 1
     fi
