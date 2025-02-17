@@ -60,3 +60,5 @@
 #### · 只是通过CDN用websocket方式代理速度已经非常快了，因为CDN线路带来的请求的速度提升还是非常可观的，可以选择自己满意的CDN厂商，速度嘎嘎快，有些不足的地方，但可以先这样用着
 
 #### · 目前该项目还有些未完善的地方，比如：websocket握手(连接通道)没完全优化（还停留在一个请求一次握手阶段），客户端代理暂不支持ios系统
+
+#### . 现在已经更新自动化脚本，可以在服务器上一键安装，具体安装信息参考在线脚本提示，执行: curl -s https://raw.githubusercontent.com/wq0angle/proxy_netty/master/proxy-install.sh | bash
