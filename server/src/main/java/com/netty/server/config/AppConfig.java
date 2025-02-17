@@ -7,7 +7,7 @@ import org.springframework.context.annotation.PropertySource;
 import org.springframework.stereotype.Component;
 
 @Configuration
-// 启动VM需要参数 -Dconfig.dir=xxx/... 自定义目录
+// 启动VM需要参数 -Dconfig.dir=xxx/... 自定义目录的代理服务端配置文件
 @PropertySource("file:${config.dir}/proxy-server.properties")
 @Data
 @Component
