@@ -135,7 +135,7 @@ proxy() {
             ;;
         update)
             echo '正在从Github更新... | 临时路径: $current_script_path | 存放路径: $install_script_file'
-            wget -O $install_script_file $install_script_url
+            wget -O $install_script_file $install_script_url >/dev/null 2>&1
             chmod +x $install_script_file
             ;;
         start)
