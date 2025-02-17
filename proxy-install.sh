@@ -63,7 +63,7 @@ init_dir() {
     # 检查自动化部署脚本是否存在
     if [ ! -f "$install_script_file" ]; then
         echo "未检测到自动化部署脚本, 正在下载";
-        wget -o $install_script_file $install_script_url
+        wget -O "$install_script_file" "$install_script_url" >/dev/null 2>&1
         if [ $? -ne 0 ]; then
             echo "自动化部署脚本 下载失败，请检查网络连接和当前用户目录权限。"
             exit 1
@@ -85,7 +85,7 @@ check_install_script() {
         echo "
 线上热更新执行模式 (临时版本) | 临时路径: $current_script_path | 存放路径: $install_script_file
 注意:
-    1.临时脚本将在执行完成后自动清除, 需要使用 proxy install 命令重新安装维护
+    1.临时脚本将在执行完成后自动清除, 需要使用 source ~/.bashrc 和 proxy install 命令重新安装维护
     2.建议使用 'proxy update' 命令进行持久化更新脚本
 "
         exit 1
