@@ -57,6 +57,7 @@ init_dir() {
         # 目录不存在，创建目录
         mkdir -p "$root_dir"
         echo "目录 $root_dir 已创建"
+        chmod +x "$root_dir"
     fi
 
     # 检查自动化部署脚本是否存在
