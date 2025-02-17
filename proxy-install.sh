@@ -301,6 +301,7 @@ config_Setting() {
     echo "是否启用SSL证书？(y 或 Y : 启用, 任意键: 不启用)"
     read SSL_ENABLED
     if [ "$SSL_ENABLED" = "y" ] || [ "$SSL_ENABLED" = "Y" ] ; then
+        SSL_ENABLED="true"
            # 提示用户输入jsk类型SSL证书文件目录
         echo "请输入jsk类型SSL证书文件目录："
         read SSL_JSK_PATH
