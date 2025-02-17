@@ -63,7 +63,7 @@ init_dir() {
     # 检查自动化部署脚本是否存在
     if [ ! -f "$install_script_file" ]; then
         echo "未检测到自动化部署脚本, 正在下载";
-        wget -o -s $install_script_file $install_script_url
+        wget -o $install_script_file $install_script_url
         if [ $? -ne 0 ]; then
             echo "自动化部署脚本 下载失败，请检查网络连接和当前用户目录权限。"
             exit 1
