@@ -61,4 +61,5 @@
 
 #### · 目前该项目还有些未完善的地方，比如：websocket握手(连接通道)没完全优化（还停留在一个请求一次握手阶段），客户端代理暂不支持ios系统
 
-#### . 现在已经更新自动化脚本，可以在服务器上一键安装，具体安装信息参考在线脚本提示，执行: curl -s https://raw.githubusercontent.com/wq0angle/proxy_netty/master/proxy-install.sh | bash
+#### . 现在已经更新自动化脚本，可以在服务器上一键安装，具体安装信息参考在线脚本提示，
+####   执行命令: curl -s https://raw.githubusercontent.com/wq0angle/proxy_netty/master/proxy-install.sh | bash
