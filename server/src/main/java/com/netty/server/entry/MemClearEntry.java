@@ -33,7 +33,7 @@ public class MemClearEntry {
         long usedMemory = getDirectMemoryUsage();
 
         if (usedMemory > THRESHOLD) {
-            log.warn("堆外内存过高，开始清理，占用: {} KB", usedMemory);
+            log.info("堆外内存过高，开始清理，占用: {} KB", usedMemory);
             cleanupOffHeapMemory();
         }
     }
