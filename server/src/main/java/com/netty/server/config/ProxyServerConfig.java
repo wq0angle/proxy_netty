@@ -1,5 +1,6 @@
 package com.netty.server.config;
 
+import com.netty.server.entry.MemClearEntry;
 import com.netty.server.entry.ProxyServerEntry;
 import com.netty.server.entry.WebsiteServerEntry;
 import jakarta.annotation.PreDestroy;
@@ -21,6 +22,8 @@ public class ProxyServerConfig {
 
     @Bean
     public String startServerHandler() throws Exception {
+        MemClearEntry memClearEntry = new MemClearEntry();
+        memClearEntry.init();
         websiteServerHandler();
         proxyServerHandler();
         return "附加服务执行完毕";

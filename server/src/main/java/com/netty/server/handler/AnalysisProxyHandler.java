@@ -8,6 +8,7 @@ import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.handler.codec.http.*;
 import io.netty.handler.codec.http.websocketx.WebSocketServerProtocolHandler;
+import io.netty.util.ReferenceCountUtil;
 import io.netty.util.internal.StringUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -32,7 +33,7 @@ public class AnalysisProxyHandler extends SimpleChannelInboundHandler<FullHttpRe
         String[] urlArr = request.uri().split(":");
         targetConnect.setProxyType(1);
         // 如果是connect方法,表示进行非代理链式请求，作为远程代理直接转发
-        if (request.method() == HttpMethod.CONNECT){
+        if (request.method() == HttpMethod.CONNECT) {
             targetConnect.setHost(urlArr[0]);
             targetConnect.setPort(urlArr.length < 2 ? 80 :Integer.parseInt(urlArr[1]));
         }else {
@@ -66,7 +67,7 @@ public class AnalysisProxyHandler extends SimpleChannelInboundHandler<FullHttpRe
                         log.info("proxy Connected to target server");
                         FullHttpResponse response = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.OK);
                         response.headers().set("proxy", "text/plain; charset=UTF-8");
-                        ctx.writeAndFlush(response);
+                        ctx.writeAndFlush(response).addListener(_ -> ReferenceCountUtil.release(response));
 
                        /*
                         释放该请求的全局监听的http解析器,不再解析TCP流并透明转发后续生命周期内的所有请求
@@ -81,7 +82,7 @@ public class AnalysisProxyHandler extends SimpleChannelInboundHandler<FullHttpRe
                                 request.protocolVersion(), request.method(), request.uri());
                         forwardRequest.headers().set(request.headers());
                         forwardRequest.content().writeBytes(request.content()); // 添加请求体
-                        future.channel().writeAndFlush(forwardRequest);
+                        future.channel().writeAndFlush(forwardRequest).addListener(_ -> ReferenceCountUtil.release(forwardRequest));
                     }
 
                     // 流处理器替换,不再涉及请求的操作,只透明转发请求
@@ -93,7 +94,7 @@ public class AnalysisProxyHandler extends SimpleChannelInboundHandler<FullHttpRe
                     FullHttpRequest forwardRequest = new DefaultFullHttpRequest(
                             request.protocolVersion(), request.method(), request.uri());
                     forwardRequest.headers().set(request.headers());
-                    future.channel().writeAndFlush(forwardRequest);
+                    future.channel().writeAndFlush(forwardRequest).addListener(_ -> ReferenceCountUtil.release(forwardRequest));
                 }
             } else {
                 // 连接失败，向客户端发送 500 错误

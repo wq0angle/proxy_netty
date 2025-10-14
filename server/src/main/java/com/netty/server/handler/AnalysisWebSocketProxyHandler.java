@@ -11,6 +11,7 @@ import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.handler.codec.http.*;
 import io.netty.handler.codec.http.websocketx.*;
 import io.netty.util.CharsetUtil;
+import io.netty.util.ReferenceCountUtil;
 import lombok.extern.slf4j.Slf4j;
 import com.netty.common.util.WebSocketUtil;
 import java.io.IOException;
@@ -62,7 +63,8 @@ public class AnalysisWebSocketProxyHandler extends SimpleChannelInboundHandler<W
                     WebSocketFrame frame = WebSocketUtil.convertToTextWebSocketFrame(response);
 //                    WebSocketFrame frame = WebSocketUtil.convertToBinaryWebSocketFrame(response);
                     // 写入并刷新到inboundChannel
-                    ctx.writeAndFlush(frame);
+                    ctx.writeAndFlush(frame).addListener(_ -> ReferenceCountUtil.release(response))
+                            .addListener(_ -> ReferenceCountUtil.release(frame));
 
                     /*
                     释放该请求的全局监听的http解析器,不再解析TCP流并透明转发后续生命周期内的所有请求
@@ -121,6 +123,7 @@ public class AnalysisWebSocketProxyHandler extends SimpleChannelInboundHandler<W
 
             // HTTP请求处理及转发
             handleHttpRequest(ctx, host, port, request);
+            ReferenceCountUtil.release(request);
 
         } else if (frame instanceof BinaryWebSocketFrame) {
             log.debug("WebSocket Frame: {}", frame.content().toString(CharsetUtil.UTF_8));

@@ -21,7 +21,7 @@ public class RelayHandler extends ChannelDuplexHandler {
             relayChannel.writeAndFlush(msg).addListener(ChannelFutureListener.CLOSE_ON_FAILURE);
         } else {
             ReferenceCountUtil.release(msg);
-            ctx.channel().close();
+            ctx.close();
         }
     }
     @Override
