@@ -1,21 +1,15 @@
 
 package com.netty.server.entry;
 
-import io.netty.buffer.PooledByteBufAllocator;
-import io.netty.util.internal.PlatformDependent;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.scheduling.annotation.Scheduled;
-import org.springframework.stereotype.Component;
 
-import javax.management.ObjectName;
 import java.lang.management.ManagementFactory;
 import java.lang.management.BufferPoolMXBean;
-import java.lang.reflect.Field;
+import java.lang.management.MemoryMXBean;
 import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicLong;
 
 @Slf4j
 public class MemClearEntry {
@@ -30,11 +24,20 @@ public class MemClearEntry {
                 30, 30, TimeUnit.SECONDS);
     }
     public void monitorAndClean() {
-        long usedMemory = getDirectMemoryUsage();
+        long usedDirectMemory = getDirectMemoryUsage();
+        long usedHeapMemory = getHeapMemoryUsage();
 
-        if (usedMemory > THRESHOLD) {
-            log.info("堆外内存过高，开始清理，占用: {} KB", usedMemory);
+        if (usedDirectMemory > THRESHOLD) {
+            log.info("堆外内存过高，开始清理，占用: {} KB", usedDirectMemory / 1024);
             cleanupOffHeapMemory();
+            log.info("清理完成");
+            return;
+        }
+
+        if (usedHeapMemory > THRESHOLD) {
+            log.info("堆内存过高，开始清理，占用: {} KB", usedHeapMemory);
+            cleanupOffHeapMemory();
+            log.info("清理完成");
         }
     }
 
@@ -55,6 +58,11 @@ public class MemClearEntry {
             log.error("Failed to get direct memory usage", e);
         }
         return -1;
+    }
+
+    private long getHeapMemoryUsage() {
+        MemoryMXBean memBean = ManagementFactory.getMemoryMXBean();
+        return memBean.getHeapMemoryUsage().getUsed();
     }
 
     private void cleanupDirectBuffers() {
