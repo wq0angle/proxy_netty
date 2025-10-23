@@ -67,7 +67,7 @@ public class AnalysisProxyHandler extends SimpleChannelInboundHandler<FullHttpRe
                         log.info("proxy Connected to target server");
                         FullHttpResponse response = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.OK);
                         response.headers().set("proxy", "text/plain; charset=UTF-8");
-                        ctx.writeAndFlush(response).addListener(_ -> ReferenceCountUtil.release(response));
+                        ctx.writeAndFlush(response);
 
                        /*
                         释放该请求的全局监听的http解析器,不再解析TCP流并透明转发后续生命周期内的所有请求
@@ -82,7 +82,7 @@ public class AnalysisProxyHandler extends SimpleChannelInboundHandler<FullHttpRe
                                 request.protocolVersion(), request.method(), request.uri());
                         forwardRequest.headers().set(request.headers());
                         forwardRequest.content().writeBytes(request.content()); // 添加请求体
-                        future.channel().writeAndFlush(forwardRequest).addListener(_ -> ReferenceCountUtil.release(forwardRequest));
+                        future.channel().writeAndFlush(forwardRequest);
                     }
 
                     // 流处理器替换,不再涉及请求的操作,只透明转发请求
@@ -94,7 +94,7 @@ public class AnalysisProxyHandler extends SimpleChannelInboundHandler<FullHttpRe
                     FullHttpRequest forwardRequest = new DefaultFullHttpRequest(
                             request.protocolVersion(), request.method(), request.uri());
                     forwardRequest.headers().set(request.headers());
-                    future.channel().writeAndFlush(forwardRequest).addListener(_ -> ReferenceCountUtil.release(forwardRequest));
+                    future.channel().writeAndFlush(forwardRequest);
                 }
             } else {
                 // 连接失败，向客户端发送 500 错误

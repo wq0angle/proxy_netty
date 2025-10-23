@@ -35,7 +35,8 @@
         <appender-ref ref="CONSOLE"/>
     </root>
 
-    <logger name="com.netty.server" level="error">
+    <logger name="com.netty.server" level="debug">
+        <appender-ref ref="INFO_FILE"/>
         <appender-ref ref="ERROR_FILE"/>
         <appender-ref ref="CONSOLE"/>
     </logger>

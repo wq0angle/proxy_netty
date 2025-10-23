@@ -63,7 +63,7 @@ public class AnalysisWebSocketProxyHandler extends SimpleChannelInboundHandler<W
                     WebSocketFrame frame = WebSocketUtil.convertToTextWebSocketFrame(response);
 //                    WebSocketFrame frame = WebSocketUtil.convertToBinaryWebSocketFrame(response);
                     // 写入并刷新到inboundChannel
-                    ctx.writeAndFlush(frame).addListener(_ -> ReferenceCountUtil.release(response));
+                    ctx.writeAndFlush(frame);
 
                     /*
                     释放该请求的全局监听的http解析器,不再解析TCP流并透明转发后续生命周期内的所有请求
